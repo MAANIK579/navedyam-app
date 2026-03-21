@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Navedyam",
+    "slug": "navedyam",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#3D1F0A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.navedyam.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#3D1F0A"
+      },
+      "package": "com.navedyam.app"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}
