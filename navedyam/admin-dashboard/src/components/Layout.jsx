@@ -140,7 +140,6 @@ export default function Layout({ children }) {
               borderRadius: 8,
               fontSize:     '0.875rem',
               fontWeight:   500,
-              color:        'rgba(253,246,236,0.6)',
               color:        'rgba(255,255,255,0.72)',
               background:   'transparent',
               cursor:       'pointer',
