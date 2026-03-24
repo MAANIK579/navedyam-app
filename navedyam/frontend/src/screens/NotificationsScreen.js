@@ -1,11 +1,12 @@
-// src/screens/NotificationsScreen.js — Enhanced with vector icons
+// src/screens/NotificationsScreen.js — Enhanced with theme support
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 import EmptyState from '../components/EmptyState';
 import { api } from '../api/client';
 import { useNotifications } from '../context/NotificationContext';
@@ -31,6 +32,7 @@ const ICON_MAP = {
 };
 
 export default function NotificationsScreen({ navigation }) {
+  const { colors, isDark } = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
@@ -84,6 +86,8 @@ export default function NotificationsScreen({ navigation }) {
     }
   }
 
+  const styles = createStyles(colors, isDark);
+
   function renderItem({ item }) {
     const id = item._id || item.id;
     const iconName = ICON_MAP[item.type] || ICON_MAP.default;
@@ -95,7 +99,7 @@ export default function NotificationsScreen({ navigation }) {
         activeOpacity={0.8}
       >
         <View style={[styles.notifIconWrap, !item.read && styles.notifIconWrapUnread]}>
-          <Ionicons name={iconName} size={20} color={!item.read ? COLORS.saffron : COLORS.textMuted} />
+          <Ionicons name={iconName} size={20} color={!item.read ? colors.saffron : colors.textMuted} />
         </View>
         <View style={styles.notifContent}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -108,7 +112,7 @@ export default function NotificationsScreen({ navigation }) {
             <Text style={styles.notifBody} numberOfLines={2}>{item.body}</Text>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-            <Ionicons name="time-outline" size={12} color={COLORS.textMuted} />
+            <Ionicons name="time-outline" size={12} color={colors.textMuted} />
             <Text style={styles.notifTime}>{timeAgo(item.created_at || item.createdAt || item.sent_at)}</Text>
           </View>
         </View>
@@ -123,7 +127,7 @@ export default function NotificationsScreen({ navigation }) {
       {hasUnread && (
         <View style={styles.markAllBar}>
           <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
-            <Ionicons name="checkmark-done-outline" size={16} color={COLORS.saffron} style={{ marginRight: 6 }} />
+            <Ionicons name="checkmark-done-outline" size={16} color={colors.saffron} style={{ marginRight: 6 }} />
             <Text style={styles.markAllText}>Mark all as read</Text>
           </TouchableOpacity>
         </View>
@@ -131,7 +135,7 @@ export default function NotificationsScreen({ navigation }) {
 
       {loading && !refreshing ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.saffron} />
+          <ActivityIndicator size="large" color={colors.saffron} />
         </View>
       ) : notifications.length === 0 ? (
         <EmptyState
@@ -147,7 +151,7 @@ export default function NotificationsScreen({ navigation }) {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.saffron]} tintColor={COLORS.saffron} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.saffron]} tintColor={colors.saffron} />
           }
         />
       )}
@@ -155,32 +159,32 @@ export default function NotificationsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.cream },
+const createStyles = (colors, isDark) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.cream },
   markAllBar: {
-    backgroundColor: COLORS.white, paddingHorizontal: 16, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border, alignItems: 'flex-end',
+    backgroundColor: colors.cardBg, paddingHorizontal: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: 'flex-end',
   },
   markAllBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  markAllText: { ...FONTS.medium, fontSize: 13, color: COLORS.saffron },
+  markAllText: { ...FONTS.medium, fontSize: 13, color: colors.saffron },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16 },
   notifCard: {
-    flexDirection: 'row', backgroundColor: COLORS.cardBg,
-    borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.border,
+    flexDirection: 'row', backgroundColor: colors.cardBg,
+    borderRadius: RADIUS.lg, borderWidth: 1, borderColor: colors.border,
     padding: 14, marginBottom: 10, ...SHADOW.small,
   },
-  notifCardUnread: { backgroundColor: '#FFFAF2', borderColor: COLORS.saffronLight },
+  notifCardUnread: { backgroundColor: colors.saffronPale, borderColor: colors.saffronLight },
   notifIconWrap: {
     width: 40, height: 40, borderRadius: 12,
-    backgroundColor: COLORS.creamDark, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.creamDark, alignItems: 'center', justifyContent: 'center',
     marginRight: 12,
   },
-  notifIconWrapUnread: { backgroundColor: COLORS.saffronPale },
-  unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.saffron },
+  notifIconWrapUnread: { backgroundColor: colors.saffronPale },
+  unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.saffron },
   notifContent: { flex: 1 },
-  notifTitle: { ...FONTS.medium, fontSize: 14, color: COLORS.text, flex: 1 },
+  notifTitle: { ...FONTS.medium, fontSize: 14, color: colors.text, flex: 1 },
   notifTitleUnread: { ...FONTS.semibold },
-  notifBody: { ...FONTS.regular, fontSize: 13, color: COLORS.textMuted, lineHeight: 18, marginTop: 2 },
-  notifTime: { ...FONTS.regular, fontSize: 11, color: COLORS.textMuted },
+  notifBody: { ...FONTS.regular, fontSize: 13, color: colors.textMuted, lineHeight: 18, marginTop: 2 },
+  notifTime: { ...FONTS.regular, fontSize: 11, color: colors.textMuted },
 });

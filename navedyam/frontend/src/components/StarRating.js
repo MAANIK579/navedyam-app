@@ -2,17 +2,19 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 const STARS = [1, 2, 3, 4, 5];
 
 export default function StarRating({ rating = 0, size = 16, interactive = false, onRate }) {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
       {STARS.map(star => {
         const filled = star <= Math.round(rating);
         const iconName = filled ? 'star' : 'star-outline';
-        const color = filled ? '#F59E0B' : COLORS.border;
+        const color = filled ? colors.saffron : colors.border;
 
         if (interactive) {
           return (

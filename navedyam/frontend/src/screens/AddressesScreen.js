@@ -4,7 +4,8 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, Alert,
 } from 'react-native';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 import AddressCard from '../components/AddressCard';
 import EmptyState from '../components/EmptyState';
 import { api } from '../api/client';
@@ -12,6 +13,7 @@ import { api } from '../api/client';
 export default function AddressesScreen({ navigation, route }) {
   const selectMode = route.params?.selectMode ?? false;
   const onSelect   = route.params?.onSelect;
+  const { colors } = useTheme();
 
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -74,6 +76,8 @@ export default function AddressesScreen({ navigation, route }) {
     }
   }
 
+  const styles = createStyles(colors);
+
   function renderItem({ item }) {
     const id = item._id || item.id;
     return (
@@ -119,7 +123,7 @@ export default function AddressesScreen({ navigation, route }) {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.saffron} />
+          <ActivityIndicator size="large" color={colors.saffron} />
         </View>
       ) : addresses.length === 0 ? (
         <EmptyState
@@ -155,10 +159,10 @@ export default function AddressesScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.cream,
+    backgroundColor: colors.cream,
   },
   header: {
     flexDirection: 'row',
@@ -166,22 +170,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.cardBg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   backBtn: {
     padding: 4,
   },
   backIcon: {
     fontSize: 22,
-    color: COLORS.saffron,
+    color: colors.saffron,
     ...FONTS.bold,
   },
   headerTitle: {
     ...FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
+    color: colors.text,
   },
   centered: {
     flex: 1,
@@ -210,33 +214,33 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: RADIUS.full,
     borderWidth: 1.5,
-    borderColor: COLORS.saffron,
+    borderColor: colors.saffron,
     backgroundColor: 'transparent',
   },
   editBtnText: {
     ...FONTS.medium,
     fontSize: 13,
-    color: COLORS.saffron,
+    color: colors.saffron,
   },
   deleteBtn: {
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: RADIUS.full,
     borderWidth: 1.5,
-    borderColor: COLORS.error,
+    borderColor: colors.error,
     backgroundColor: 'transparent',
   },
   deleteBtnText: {
     ...FONTS.medium,
     fontSize: 13,
-    color: COLORS.error,
+    color: colors.error,
   },
   fab: {
     position: 'absolute',
     bottom: 28,
     left: 24,
     right: 24,
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
     borderRadius: RADIUS.lg,
     paddingVertical: 16,
     alignItems: 'center',
@@ -245,7 +249,7 @@ const styles = StyleSheet.create({
   fabText: {
     ...FONTS.bold,
     fontSize: 15,
-    color: COLORS.white,
+    color: colors.white,
     letterSpacing: 0.3,
   },
 });

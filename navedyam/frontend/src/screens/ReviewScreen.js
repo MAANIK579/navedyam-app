@@ -4,12 +4,14 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   SafeAreaView, Alert, ActivityIndicator,
 } from 'react-native';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 import StarRating from '../components/StarRating';
 import { api } from '../api/client';
 
 export default function ReviewScreen({ navigation, route }) {
   const { orderId, orderedItems = [] } = route.params || {};
+  const { colors } = useTheme();
 
   const [selectedItemId, setSelectedItemId] = useState(
     orderedItems.length > 0 ? (orderedItems[0]._id || orderedItems[0].id) : null
@@ -19,6 +21,14 @@ export default function ReviewScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
+    if (!orderId) {
+      Alert.alert('Order Missing', 'Unable to find order for this review.');
+      return;
+    }
+    if (!selectedItemId) {
+      Alert.alert('Item Missing', 'Please select an item to review.');
+      return;
+    }
     if (!rating) {
       Alert.alert('Please rate', 'Select at least 1 star before submitting');
       return;
@@ -27,7 +37,7 @@ export default function ReviewScreen({ navigation, route }) {
     try {
       await api.submitReview({
         order_id:  orderId,
-        menu_item: selectedItemId,
+        menu_item_id: selectedItemId,
         rating,
         comment:   comment.trim(),
       });
@@ -42,6 +52,8 @@ export default function ReviewScreen({ navigation, route }) {
       setSubmitting(false);
     }
   }
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -108,7 +120,7 @@ export default function ReviewScreen({ navigation, route }) {
             value={comment}
             onChangeText={setComment}
             placeholder="Tell us what you liked or what could be better..."
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={colors.textMuted}
             style={styles.commentInput}
             multiline
             numberOfLines={5}
@@ -120,11 +132,11 @@ export default function ReviewScreen({ navigation, route }) {
         <TouchableOpacity
           style={[styles.submitBtn, (!rating || submitting) && styles.submitBtnDisabled]}
           onPress={handleSubmit}
-          disabled={!rating || submitting}
+          disabled={!rating || !selectedItemId || submitting}
           activeOpacity={0.85}
         >
           {submitting
-            ? <ActivityIndicator color={COLORS.white} />
+            ? <ActivityIndicator color={colors.white} />
             : <Text style={styles.submitBtnText}>Submit Review</Text>
           }
         </TouchableOpacity>
@@ -133,10 +145,10 @@ export default function ReviewScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.cream,
+    backgroundColor: colors.cream,
   },
   header: {
     flexDirection: 'row',
@@ -144,22 +156,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.cardBg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   backBtn: {
     padding: 4,
   },
   backIcon: {
     fontSize: 22,
-    color: COLORS.saffron,
+    color: colors.saffron,
     ...FONTS.bold,
   },
   headerTitle: {
     ...FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
+    color: colors.text,
   },
   scroll: {
     padding: 20,
@@ -171,7 +183,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...FONTS.semibold,
     fontSize: 15,
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: 12,
   },
   itemScroll: {
@@ -186,14 +198,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: RADIUS.lg,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.creamDark,
+    borderColor: colors.border,
+    backgroundColor: colors.creamDark,
     maxWidth: 160,
     marginRight: 8,
   },
   itemChipActive: {
-    backgroundColor: COLORS.saffron,
-    borderColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
+    borderColor: colors.saffron,
   },
   itemChipEmoji: {
     fontSize: 18,
@@ -201,18 +213,18 @@ const styles = StyleSheet.create({
   itemChipText: {
     ...FONTS.medium,
     fontSize: 13,
-    color: COLORS.text,
+    color: colors.text,
     flexShrink: 1,
   },
   itemChipTextActive: {
-    color: COLORS.white,
+    color: colors.white,
     ...FONTS.semibold,
   },
   ratingCard: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: RADIUS.xl,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
@@ -221,7 +233,7 @@ const styles = StyleSheet.create({
   ratingPrompt: {
     ...FONTS.semibold,
     fontSize: 16,
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -231,34 +243,34 @@ const styles = StyleSheet.create({
   ratingLabel: {
     ...FONTS.bold,
     fontSize: 15,
-    color: COLORS.saffron,
+    color: colors.saffron,
     textAlign: 'center',
   },
   commentInput: {
-    backgroundColor: COLORS.creamDark,
+    backgroundColor: colors.creamDark,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: RADIUS.lg,
     padding: 14,
     fontSize: 15,
-    color: COLORS.text,
+    color: colors.text,
     ...FONTS.regular,
     minHeight: 110,
   },
   submitBtn: {
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
     borderRadius: RADIUS.lg,
     paddingVertical: 16,
     alignItems: 'center',
     ...SHADOW.small,
   },
   submitBtnDisabled: {
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
   },
   submitBtnText: {
     ...FONTS.bold,
     fontSize: 16,
-    color: COLORS.white,
+    color: colors.white,
     letterSpacing: 0.3,
   },
 });

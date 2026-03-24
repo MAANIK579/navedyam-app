@@ -18,7 +18,11 @@ router.post(
   authMiddleware,
   validate(reviewSchema),
   asyncHandler(async (req, res) => {
-    const { order_id, menu_item_id, rating, comment } = req.body;
+    const { order_id, menu_item_id, menu_item, rating, comment, type } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(order_id)) {
+      throw new ApiError(400, 'Invalid order id');
+    }
 
     // Verify order exists and belongs to the user
     const order = await Order.findById(order_id);
@@ -32,18 +36,38 @@ router.post(
       throw new ApiError(400, 'You can only review delivered orders');
     }
 
+    let resolvedMenuItemId = menu_item_id || menu_item;
+    if (!resolvedMenuItemId && type === 'order') {
+      resolvedMenuItemId = order.items?.[0]?.menu_item?.toString();
+    }
+
+    if (!resolvedMenuItemId) {
+      throw new ApiError(400, 'menu_item_id is required');
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(resolvedMenuItemId)) {
+      throw new ApiError(400, 'Invalid menu item id');
+    }
+
+    const isItemInOrder = (order.items || []).some(
+      (item) => item.menu_item && item.menu_item.toString() === resolvedMenuItemId.toString()
+    );
+    if (!isItemInOrder) {
+      throw new ApiError(400, 'Selected item is not part of this order');
+    }
+
     // Check for duplicate review (same user + order + menu_item)
     const existing = await Review.findOne({
       user: req.user.id,
       order: order_id,
-      menu_item: menu_item_id,
+      menu_item: resolvedMenuItemId,
     });
     if (existing) {
       throw new ApiError(400, 'You have already reviewed this item for this order');
     }
 
     // Verify the menu item exists
-    const menuItem = await MenuItem.findById(menu_item_id);
+    const menuItem = await MenuItem.findById(resolvedMenuItemId);
     if (!menuItem) {
       throw new ApiError(404, 'Menu item not found');
     }
@@ -51,7 +75,7 @@ router.post(
     const review = await Review.create({
       user: req.user.id,
       order: order_id,
-      menu_item: menu_item_id,
+      menu_item: resolvedMenuItemId,
       rating,
       comment: comment || '',
     });
@@ -65,6 +89,9 @@ router.get(
   '/item/:itemId',
   asyncHandler(async (req, res) => {
     const { itemId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(itemId)) {
+      throw new ApiError(400, 'Invalid menu item id');
+    }
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
     const skip = (page - 1) * limit;
@@ -124,6 +151,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const reviews = await Review.find({ user: req.user.id })
       .populate('menu_item', 'name emoji')
+      .populate('order', 'display_id created_at status')
       .sort({ created_at: -1 })
       .lean();
 

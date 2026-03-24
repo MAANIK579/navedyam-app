@@ -4,7 +4,8 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, Alert,
 } from 'react-native';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 import { StatusPill, Divider } from '../components';
 import OrderTimeline from '../components/OrderTimeline';
 import { api } from '../api/client';
@@ -13,10 +14,12 @@ const FINAL_STATUSES = ['delivered', 'cancelled'];
 
 export default function OrderDetailScreen({ navigation, route }) {
   const { orderId } = route.params || {};
+  const { colors } = useTheme();
 
   const [order, setOrder]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [reordering, setReordering] = useState(false);
+  const [reviewedItemIds, setReviewedItemIds] = useState([]);
 
   useEffect(() => {
     loadOrder();
@@ -26,7 +29,21 @@ export default function OrderDetailScreen({ navigation, route }) {
     setLoading(true);
     try {
       const data = await api.getOrder(orderId);
-      setOrder(data.order || data);
+      const fetchedOrder = data.order || data;
+      setOrder(fetchedOrder);
+
+      try {
+        const reviewData = await api.getMyReviews();
+        const myReviews = reviewData.reviews || [];
+        const currentOrderId = String(fetchedOrder?._id || fetchedOrder?.id || orderId);
+        const reviewedForOrder = myReviews
+          .filter((r) => String(r.order) === currentOrderId)
+          .map((r) => String(r.menu_item?._id || r.menu_item || ''))
+          .filter(Boolean);
+        setReviewedItemIds(reviewedForOrder);
+      } catch (_) {
+        setReviewedItemIds([]);
+      }
     } catch (err) {
       Alert.alert('Error', err.message || 'Could not load order');
     } finally {
@@ -50,11 +67,13 @@ export default function OrderDetailScreen({ navigation, route }) {
     }
   }
 
+  const styles = createStyles(colors);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.saffron} />
+          <ActivityIndicator size="large" color={colors.saffron} />
         </View>
       </SafeAreaView>
     );
@@ -73,7 +92,11 @@ export default function OrderDetailScreen({ navigation, route }) {
   const isDelivered  = order.status === 'delivered';
   const isCancelled  = order.status === 'cancelled';
   const isFinal      = FINAL_STATUSES.includes(order.status);
-  const hasReview    = !!order.review;
+  const orderItemIds = (order.items || [])
+    .map((item) => item.menu_item?._id || item.menu_item || item._id || item.id)
+    .filter(Boolean)
+    .map((id) => String(id));
+  const hasPendingReview = isDelivered && orderItemIds.some((id) => !reviewedItemIds.includes(id));
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -118,7 +141,7 @@ export default function OrderDetailScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Items Ordered</Text>
           {(order.items || []).map((item, idx) => (
-            <View key={idx} style={[styles.itemRow, idx > 0 && { borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10, marginTop: 10 }]}>
+            <View key={idx} style={[styles.itemRow, idx > 0 && { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10, marginTop: 10 }]}>
               <Text style={styles.itemEmoji}>{item.emoji || '🍽️'}</Text>
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{item.name}</Text>
@@ -147,7 +170,7 @@ export default function OrderDetailScreen({ navigation, route }) {
           {(order.discount > 0) && (
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Discount</Text>
-              <Text style={[styles.billValue, { color: COLORS.green }]}>-₹{order.discount}</Text>
+              <Text style={[styles.billValue, { color: colors.green }]}>-₹{order.discount}</Text>
             </View>
           )}
           <Divider style={{ marginVertical: 8 }} />
@@ -195,7 +218,7 @@ export default function OrderDetailScreen({ navigation, route }) {
             activeOpacity={0.85}
           >
             {reordering
-              ? <ActivityIndicator color={COLORS.white} size="small" />
+              ? <ActivityIndicator color={colors.white} size="small" />
               : <Text style={styles.actionBtnText}>🔄 Reorder</Text>
             }
           </TouchableOpacity>
@@ -203,22 +226,26 @@ export default function OrderDetailScreen({ navigation, route }) {
           {!isFinal && (
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionBtnOutline]}
-              onPress={() => navigation.navigate('Track', { orderId: order._id || order.id })}
+              onPress={() => navigation.navigate('MainTabs', {
+                screen: 'Track',
+                params: { orderId: order._id || order.id },
+              })}
               activeOpacity={0.85}
             >
-              <Text style={[styles.actionBtnText, { color: COLORS.saffron }]}>📍 Track Order</Text>
+              <Text style={[styles.actionBtnText, { color: colors.saffron }]}>📍 Track Order</Text>
             </TouchableOpacity>
           )}
 
-          {isDelivered && !hasReview && (
+          {hasPendingReview && (
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionBtnGold]}
-              onPress={() => navigation.navigate('Review', {
+              onPress={() => navigation.navigate('OrderRating', {
                 orderId: order._id || order.id,
                 orderedItems: (order.items || []).map(i => ({
-                  _id: i._id || i.menu_item,
-                  name: i.name,
-                  emoji: i.emoji,
+                  _id: i.menu_item?._id || i.menu_item || i._id || i.id,
+                  name: i.item_name || i.name,
+                  emoji: i.menu_item?.emoji || i.emoji,
+                  quantity: i.quantity || i.qty || 1,
                 })),
               })}
               activeOpacity={0.85}
@@ -232,10 +259,10 @@ export default function OrderDetailScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.cream,
+    backgroundColor: colors.cream,
   },
   header: {
     flexDirection: 'row',
@@ -243,22 +270,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.cardBg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   backBtn: {
     padding: 4,
   },
   backIcon: {
     fontSize: 22,
-    color: COLORS.saffron,
+    color: colors.saffron,
     ...FONTS.bold,
   },
   headerTitle: {
     ...FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
+    color: colors.text,
   },
   centered: {
     flex: 1,
@@ -268,17 +295,17 @@ const styles = StyleSheet.create({
   errorText: {
     ...FONTS.regular,
     fontSize: 16,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
   },
   scroll: {
     padding: 16,
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: RADIUS.lg,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 16,
     marginBottom: 14,
     ...SHADOW.small,
@@ -286,7 +313,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     ...FONTS.bold,
     fontSize: 15,
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: 14,
   },
   orderTopRow: {
@@ -298,18 +325,18 @@ const styles = StyleSheet.create({
   orderIdLabel: {
     ...FONTS.regular,
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     marginBottom: 2,
   },
   orderId: {
     ...FONTS.heavy,
     fontSize: 20,
-    color: COLORS.text,
+    color: colors.text,
   },
   placedAt: {
     ...FONTS.regular,
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     marginTop: 2,
   },
   itemRow: {
@@ -326,18 +353,18 @@ const styles = StyleSheet.create({
   itemName: {
     ...FONTS.semibold,
     fontSize: 14,
-    color: COLORS.text,
+    color: colors.text,
   },
   itemQty: {
     ...FONTS.regular,
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     marginTop: 2,
   },
   itemPrice: {
     ...FONTS.bold,
     fontSize: 14,
-    color: COLORS.brown,
+    color: colors.saffronDeep,
   },
   billRow: {
     flexDirection: 'row',
@@ -347,33 +374,33 @@ const styles = StyleSheet.create({
   billLabel: {
     ...FONTS.regular,
     fontSize: 14,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
   },
   billValue: {
     ...FONTS.medium,
     fontSize: 14,
-    color: COLORS.text,
+    color: colors.text,
   },
   grandLabel: {
     ...FONTS.bold,
     fontSize: 16,
-    color: COLORS.text,
+    color: colors.text,
   },
   grandValue: {
     ...FONTS.heavy,
     fontSize: 18,
-    color: COLORS.saffron,
+    color: colors.saffron,
   },
   addressText: {
     ...FONTS.regular,
     fontSize: 14,
-    color: COLORS.text,
+    color: colors.text,
     lineHeight: 20,
   },
   addressSub: {
     ...FONTS.regular,
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     marginTop: 4,
   },
   metaRow: {
@@ -384,19 +411,19 @@ const styles = StyleSheet.create({
   metaLabel: {
     ...FONTS.regular,
     fontSize: 14,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
   },
   metaValue: {
     ...FONTS.medium,
     fontSize: 14,
-    color: COLORS.text,
+    color: colors.text,
   },
   actions: {
     gap: 12,
     marginTop: 4,
   },
   actionBtn: {
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
     borderRadius: RADIUS.lg,
     paddingVertical: 14,
     alignItems: 'center',
@@ -404,15 +431,15 @@ const styles = StyleSheet.create({
   actionBtnOutline: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: COLORS.saffron,
+    borderColor: colors.saffron,
   },
   actionBtnGold: {
-    backgroundColor: COLORS.turmeric || '#D4A017',
+    backgroundColor: colors.turmeric || '#D4A017',
   },
   actionBtnText: {
     ...FONTS.bold,
     fontSize: 15,
-    color: COLORS.white,
+    color: colors.white,
     letterSpacing: 0.3,
   },
 });

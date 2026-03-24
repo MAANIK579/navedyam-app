@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { api } from '../api/client';
 import Modal from '../components/Modal';
 import StatusBadge from '../components/StatusBadge';
-import { SpinnerIcon, AlertIcon, CheckIcon } from '../components/Icons';
+import { SpinnerIcon, AlertIcon, CheckIcon, CashIcon } from '../components/Icons';
 
 const STATUSES = ['placed','confirmed','preparing','out_for_delivery','delivered','cancelled'];
 
@@ -43,6 +43,7 @@ export default function OrderDetailModal({ orderId, open, onClose, onStatusUpdat
   const [error,      setError]      = useState('');
   const [newStatus,  setNewStatus]  = useState('');
   const [updating,   setUpdating]   = useState(false);
+  const [updatingPayment, setUpdatingPayment] = useState(false);
 
   useEffect(() => {
     if (!open || !orderId) { setOrder(null); return; }
@@ -70,6 +71,20 @@ export default function OrderDetailModal({ orderId, open, onClose, onStatusUpdat
       toast.error('Failed to update status');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleMarkAsPaid = async () => {
+    setUpdatingPayment(true);
+    try {
+      await api.updatePaymentStatus(orderId, 'paid');
+      toast.success('Payment marked as paid');
+      setOrder((prev) => ({ ...prev, payment_status: 'paid' }));
+      if (onStatusUpdated) onStatusUpdated();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update payment status');
+    } finally {
+      setUpdatingPayment(false);
     }
   };
 
@@ -181,17 +196,49 @@ export default function OrderDetailModal({ orderId, open, onClose, onStatusUpdat
               Payment
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-              {[
-                { label: 'Method',       value: order.payment_method ?? order.paymentMethod },
-                { label: 'Status',       value: order.payment_status ?? order.paymentStatus },
-                { label: 'Transaction',  value: order.payment_id     ?? order.paymentId },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'capitalize' }}>{value ?? '—'}</div>
+              <div style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Method</div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                  {(order.payment_method ?? order.paymentMethod) === 'cod' ? 'Cash on Delivery' :
+                   (order.payment_method ?? order.paymentMethod) === 'upi' ? 'UPI Payment' : 'Online (Razorpay)'}
                 </div>
-              ))}
+              </div>
+              <div style={{
+                background: (order.payment_status ?? order.paymentStatus) === 'paid' ? 'var(--green-pale)' : 'var(--warning-pale)',
+                border: `1px solid ${(order.payment_status ?? order.paymentStatus) === 'paid' ? 'var(--green-border)' : 'var(--border)'}`,
+                borderRadius: 8,
+                padding: '10px 12px'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</div>
+                <div style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  color: (order.payment_status ?? order.paymentStatus) === 'paid' ? 'var(--green)' : 'var(--warning)'
+                }}>
+                  {order.payment_status ?? order.paymentStatus ?? 'pending'}
+                </div>
+              </div>
+              <div style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Transaction</div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 700 }}>{order.payment_id ?? order.paymentId ?? '—'}</div>
+              </div>
             </div>
+            {/* Mark as Paid button for COD/UPI orders (not Razorpay - auto-verified) */}
+            {(order.payment_method !== 'razorpay') && (order.payment_status !== 'paid') && (
+              <button
+                className="btn btn-primary"
+                onClick={handleMarkAsPaid}
+                disabled={updatingPayment}
+                style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {updatingPayment
+                  ? <SpinnerIcon size={14} color="#fff" />
+                  : <CashIcon size={14} color="#fff" />
+                }
+                {updatingPayment ? 'Updating…' : 'Mark Payment as Received'}
+              </button>
+            )}
           </div>
 
           {/* Items table */}
@@ -259,8 +306,8 @@ export default function OrderDetailModal({ orderId, open, onClose, onStatusUpdat
                 </div>
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 14px', background: 'var(--brown)' }}>
-                <span style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--cream)' }}>Grand Total</span>
-                <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--saffron-light, #F5A623)' }}>
+                <span style={{ fontSize: '0.925rem', fontWeight: 700, color: '#FFFFFF' }}>Grand Total</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--saffron-light, #4ADE80)' }}>
                   {fmtCurrency(order.total_amount ?? order.totalAmount ?? billSummary.grand_total ?? billSummary.grandTotal)}
                 </span>
               </div>
@@ -269,7 +316,7 @@ export default function OrderDetailModal({ orderId, open, onClose, onStatusUpdat
 
           {/* Notes */}
           {order.notes && (
-            <div style={{ marginTop: 20, padding: '12px 16px', background: 'var(--warning-pale)', border: '1px solid #FCD34D', borderRadius: 8 }}>
+            <div style={{ marginTop: 20, padding: '12px 16px', background: 'var(--warning-pale)', border: '1px solid var(--warning)', opacity: 0.8, borderRadius: 8 }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--warning)' }}>Order Notes: </span>
               <span style={{ fontSize: '0.875rem', color: 'var(--text)' }}>{order.notes}</span>
             </div>

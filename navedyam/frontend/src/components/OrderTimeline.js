@@ -1,7 +1,8 @@
 // src/components/OrderTimeline.js
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
-import { COLORS, FONTS } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS } from '../theme';
 
 const STEPS = [
   { key: 'placed',           label: 'Order Placed' },
@@ -26,6 +27,7 @@ function formatTime(timestamp) {
 }
 
 export default function OrderTimeline({ status, statusHistory }) {
+  const { colors } = useTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const currentIdx = STATUS_INDEX[status] ?? -1;
 
@@ -39,6 +41,8 @@ export default function OrderTimeline({ status, statusHistory }) {
     loop.start();
     return () => loop.stop();
   }, [pulseAnim]);
+
+  const styles = createStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -94,7 +98,7 @@ export default function OrderTimeline({ status, statusHistory }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     paddingVertical: 8,
   },
@@ -115,20 +119,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   doneCircle: {
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
   },
   activeCircle: {
-    backgroundColor: COLORS.saffronLight,
+    backgroundColor: colors.saffronLight,
     borderWidth: 2.5,
-    borderColor: COLORS.saffron,
+    borderColor: colors.saffron,
   },
   pendingCircle: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.creamDark,
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
   },
   checkText: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: 13,
     ...FONTS.bold,
   },
@@ -136,11 +140,11 @@ const styles = StyleSheet.create({
     width: 2,
     flex: 1,
     minHeight: 22,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     marginTop: 2,
   },
   lineDone: {
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
   },
   labelCol: {
     flex: 1,
@@ -149,23 +153,23 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     ...FONTS.regular,
   },
   labelDone: {
-    color: COLORS.text,
+    color: colors.text,
     ...FONTS.semibold,
   },
   labelActive: {
-    color: COLORS.saffron,
+    color: colors.saffron,
     ...FONTS.bold,
   },
   labelPending: {
-    color: '#9CA3AF',
+    color: colors.textLight,
   },
   time: {
     fontSize: 11,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     marginTop: 2,
   },
 });

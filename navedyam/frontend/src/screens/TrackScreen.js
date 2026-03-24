@@ -1,4 +1,4 @@
-// src/screens/TrackScreen.js — Enhanced with vector icons
+// src/screens/TrackScreen.js — Enhanced with theme support
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
@@ -7,8 +7,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { io } from 'socket.io-client';
 import { api, SOCKET_URL } from '../api/client';
+import { useTheme } from '../context/ThemeContext';
 import { Input, Button, StatusPill } from '../components';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 
 const STEP_ICONS = {
   placed:           'receipt-outline',
@@ -18,9 +19,13 @@ const STEP_ICONS = {
   delivered:        'checkmark-done-outline',
 };
 
-export default function TrackScreen({ route }) {
+const FINAL_ORDER_STATUSES = ['delivered', 'cancelled'];
+
+export default function TrackScreen({ route, navigation }) {
+  const { colors, isDark } = useTheme();
   const [orderId,  setOrderId]  = useState(route.params?.orderId || '');
   const [tracking, setTracking] = useState(null);
+  const [trackNotice, setTrackNotice] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const socketRef = useRef(null);
@@ -40,6 +45,12 @@ export default function TrackScreen({ route }) {
     socket.emit('join:order', tracking.order.id);
 
     socket.on('order:status_update', ({ status, steps, estimated_delivery }) => {
+      if (FINAL_ORDER_STATUSES.includes(status)) {
+        setTracking(null);
+        setTrackNotice('This order is completed or cancelled, so it is no longer shown in live tracking.');
+        return;
+      }
+
       setTracking(prev => prev ? {
         ...prev,
         order: { ...prev.order, status },
@@ -60,6 +71,12 @@ export default function TrackScreen({ route }) {
     try {
       setLoading(true);
       const data = await api.trackOrder(trackId.trim());
+      if (FINAL_ORDER_STATUSES.includes(data?.order?.status)) {
+        setTracking(null);
+        setTrackNotice('This order is completed or cancelled, so it is no longer shown in live tracking.');
+        return;
+      }
+      setTrackNotice('');
       setTracking(data);
     } catch (err) {
       Alert.alert('Not Found', 'Order not found. Please check the ID.');
@@ -73,6 +90,12 @@ export default function TrackScreen({ route }) {
     try {
       setRefreshing(true);
       const data = await api.trackOrder(tracking.order.id);
+      if (FINAL_ORDER_STATUSES.includes(data?.order?.status)) {
+        setTracking(null);
+        setTrackNotice('This order is completed or cancelled, so it is no longer shown in live tracking.');
+        return;
+      }
+      setTrackNotice('');
       setTracking(data);
     } catch (_) {
       // silent fail on refresh
@@ -80,6 +103,8 @@ export default function TrackScreen({ route }) {
       setRefreshing(false);
     }
   }
+
+  const styles = createStyles(colors, isDark);
 
   return (
     <ScrollView
@@ -89,8 +114,8 @@ export default function TrackScreen({ route }) {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={[COLORS.saffron]}
-          tintColor={COLORS.saffron}
+          colors={[colors.saffron]}
+          tintColor={colors.saffron}
         />
       }
     >
@@ -104,14 +129,14 @@ export default function TrackScreen({ route }) {
             style={{ flex: 1, marginBottom: 0 }}
           />
           <TouchableOpacity style={styles.searchBtn} onPress={() => doTrack()} activeOpacity={0.8}>
-            <Ionicons name="navigate" size={18} color={COLORS.white} />
+            <Ionicons name="navigate" size={18} color={colors.white} />
           </TouchableOpacity>
         </View>
 
         {loading && (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={COLORS.saffron} />
-            <Text style={{ color: COLORS.textMuted, marginTop: 10 }}>Fetching order...</Text>
+            <ActivityIndicator size="large" color={colors.saffron} />
+            <Text style={{ color: colors.textMuted, marginTop: 10 }}>Fetching order...</Text>
           </View>
         )}
 
@@ -131,7 +156,7 @@ export default function TrackScreen({ route }) {
             {/* ETA */}
             {tracking.estimated_delivery && (
               <View style={styles.etaBanner}>
-                <Ionicons name="time-outline" size={16} color={COLORS.brown} style={{ marginRight: 6 }} />
+                <Ionicons name="time-outline" size={16} color={isDark ? colors.text : colors.brown} style={{ marginRight: 6 }} />
                 <Text style={styles.etaText}>
                   ETA: {new Date(tracking.estimated_delivery).toLocaleTimeString('en-IN', {
                     hour: '2-digit', minute: '2-digit',
@@ -167,9 +192,9 @@ export default function TrackScreen({ route }) {
                         step.active && styles.stepDotActive,
                       ]}>
                         {step.done ? (
-                          <Ionicons name="checkmark" size={16} color={COLORS.white} />
+                          <Ionicons name="checkmark" size={16} color={colors.white} />
                         ) : step.active ? (
-                          <Ionicons name={stepIcon} size={14} color={COLORS.white} />
+                          <Ionicons name={stepIcon} size={14} color={colors.white} />
                         ) : (
                           <Text style={styles.stepDotTxt}>{idx + 1}</Text>
                         )}
@@ -179,7 +204,7 @@ export default function TrackScreen({ route }) {
                       )}
                     </View>
                     <View style={styles.stepBody}>
-                      <Text style={[styles.stepName, (step.done || step.active) && { color: COLORS.text }]}>
+                      <Text style={[styles.stepName, (step.done || step.active) && { color: colors.text }]}>
                         {step.label}
                       </Text>
                       {(step.done || step.active) && (
@@ -187,7 +212,7 @@ export default function TrackScreen({ route }) {
                       )}
                       {step.active && step.eta && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                          <Ionicons name="time-outline" size={12} color={COLORS.turmeric} />
+                          <Ionicons name="time-outline" size={12} color={colors.turmeric} />
                           <Text style={styles.stepEta}>ETA: {step.eta}</Text>
                         </View>
                       )}
@@ -199,19 +224,45 @@ export default function TrackScreen({ route }) {
 
             <View style={styles.deliveryAddr}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                <Ionicons name="location-outline" size={14} color={COLORS.textMuted} />
+                <Ionicons name="location-outline" size={14} color={colors.textMuted} />
                 <Text style={styles.addrLabel}>Delivering to</Text>
               </View>
               <Text style={styles.addrVal}>{tracking.order.address}</Text>
             </View>
+
+            {/* Rate Order Button - shows when delivered */}
+            {tracking.order.status === 'delivered' && (
+              <TouchableOpacity
+                style={styles.rateBtn}
+                onPress={() => navigation.navigate('OrderRating', {
+                  orderId: tracking.order.id,
+                  displayId: tracking.order.display_id,
+                  orderedItems: (tracking.order.items || []).map((item) => {
+                    const menuItemObj = typeof item.menu_item === 'object' ? item.menu_item : null;
+                    const menuItemId = menuItemObj?._id || item.menu_item || item._id || '';
+                    return {
+                      id: menuItemId,
+                      _id: menuItemId,
+                      name: item.item_name || menuItemObj?.name || 'Item',
+                      emoji: menuItemObj?.emoji || '🍽️',
+                      quantity: item.quantity || 1,
+                    };
+                  }),
+                })}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="star-outline" size={20} color={colors.white} />
+                <Text style={styles.rateBtnText}>Rate Your Order</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
         {!loading && !tracking && (
           <View style={styles.center}>
-            <Ionicons name="cube-outline" size={56} color={COLORS.border} />
+            <Ionicons name="cube-outline" size={56} color={colors.border} />
             <Text style={styles.emptyTitle}>Track your order</Text>
-            <Text style={styles.emptySub}>Enter your order ID above and tap Track</Text>
+            <Text style={styles.emptySub}>{trackNotice || 'Enter your order ID above and tap Track'}</Text>
           </View>
         )}
       </View>
@@ -219,57 +270,63 @@ export default function TrackScreen({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.cream },
+const createStyles = (colors, isDark) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.cream },
   body:   { padding: 20 },
   searchRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 20 },
   searchBtn: {
-    backgroundColor: COLORS.saffron, borderRadius: RADIUS.md,
+    backgroundColor: colors.saffron, borderRadius: RADIUS.md,
     width: 48, height: 48, alignItems: 'center', justifyContent: 'center',
     ...SHADOW.small,
   },
   center: { alignItems: 'center', paddingVertical: 48 },
   trackCard: {
-    backgroundColor: COLORS.cardBg, borderRadius: RADIUS.xl,
-    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: colors.cardBg, borderRadius: RADIUS.xl,
+    borderWidth: 1, borderColor: colors.border,
     padding: 20, ...SHADOW.medium,
   },
   orderHeader: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'flex-start', marginBottom: 14,
   },
-  orderId:    { fontSize: 18, ...FONTS.bold, color: COLORS.text },
-  orderIdSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2, maxWidth: 200 },
+  orderId:    { fontSize: 18, ...FONTS.bold, color: colors.text },
+  orderIdSub: { fontSize: 12, color: colors.textMuted, marginTop: 2, maxWidth: 200 },
   etaBanner: {
-    backgroundColor: COLORS.creamDark, borderRadius: RADIUS.md,
+    backgroundColor: colors.creamDark, borderRadius: RADIUS.md,
     padding: 10, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
   },
-  etaText:   { fontSize: 14, ...FONTS.bold, color: COLORS.brown },
-  itemsList: { backgroundColor: COLORS.creamDark, borderRadius: RADIUS.md, padding: 12, gap: 6 },
+  etaText:   { fontSize: 14, ...FONTS.bold, color: isDark ? colors.text : colors.brown },
+  itemsList: { backgroundColor: colors.creamDark, borderRadius: RADIUS.md, padding: 12, gap: 6 },
   trackItem: { flexDirection: 'row', justifyContent: 'space-between' },
-  trackItemName: { fontSize: 13, color: COLORS.text, ...FONTS.medium },
-  trackItemQty:  { fontSize: 13, color: COLORS.textMuted },
+  trackItemName: { fontSize: 13, color: colors.text, ...FONTS.medium },
+  trackItemQty:  { fontSize: 13, color: colors.textMuted },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  totalLbl: { fontSize: 14, color: COLORS.textMuted },
-  totalVal: { fontSize: 16, ...FONTS.bold, color: COLORS.saffronDeep },
+  totalLbl: { fontSize: 14, color: colors.textMuted },
+  totalVal: { fontSize: 16, ...FONTS.bold, color: colors.saffronDeep },
   step:     { flexDirection: 'row', gap: 12, marginBottom: 0 },
   stepLeft: { alignItems: 'center', width: 32 },
   stepDot: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.creamDark,
-    borderWidth: 2, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center',
+    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.creamDark,
+    borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
-  stepDotDone:   { backgroundColor: COLORS.saffron, borderColor: COLORS.saffron },
-  stepDotActive: { backgroundColor: COLORS.green, borderColor: COLORS.green },
-  stepDotTxt:    { fontSize: 12, ...FONTS.bold, color: COLORS.textMuted },
-  stepLine:      { flex: 1, width: 2, backgroundColor: COLORS.border, marginVertical: 3, minHeight: 24 },
-  stepLineDone:  { backgroundColor: COLORS.saffron },
+  stepDotDone:   { backgroundColor: colors.saffron, borderColor: colors.saffron },
+  stepDotActive: { backgroundColor: colors.green, borderColor: colors.green },
+  stepDotTxt:    { fontSize: 12, ...FONTS.bold, color: colors.textMuted },
+  stepLine:      { flex: 1, width: 2, backgroundColor: colors.border, marginVertical: 3, minHeight: 24 },
+  stepLineDone:  { backgroundColor: colors.saffron },
   stepBody:      { flex: 1, paddingBottom: 20, paddingTop: 4 },
-  stepName:      { fontSize: 14, ...FONTS.semibold, color: COLORS.textMuted },
-  stepDesc:      { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
-  stepEta:       { fontSize: 12, color: COLORS.turmeric, ...FONTS.bold },
-  deliveryAddr:  { marginTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 },
-  addrLabel:     { fontSize: 12, color: COLORS.textMuted },
-  addrVal:       { fontSize: 14, color: COLORS.text, ...FONTS.medium, marginLeft: 18 },
-  emptyTitle:    { fontSize: 20, ...FONTS.bold, color: COLORS.text, marginTop: 12 },
-  emptySub:      { fontSize: 13, color: COLORS.textMuted, marginTop: 4, textAlign: 'center' },
+  stepName:      { fontSize: 14, ...FONTS.semibold, color: colors.textMuted },
+  stepDesc:      { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  stepEta:       { fontSize: 12, color: colors.turmeric, ...FONTS.bold },
+  deliveryAddr:  { marginTop: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  addrLabel:     { fontSize: 12, color: colors.textMuted },
+  addrVal:       { fontSize: 14, color: colors.text, ...FONTS.medium, marginLeft: 18 },
+  rateBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: colors.saffron, borderRadius: RADIUS.lg,
+    paddingVertical: 14, marginTop: 20, ...SHADOW.medium,
+  },
+  rateBtnText: { fontSize: 15, ...FONTS.bold, color: colors.white },
+  emptyTitle:    { fontSize: 20, ...FONTS.bold, color: colors.text, marginTop: 12 },
+  emptySub:      { fontSize: 13, color: colors.textMuted, marginTop: 4, textAlign: 'center' },
 });

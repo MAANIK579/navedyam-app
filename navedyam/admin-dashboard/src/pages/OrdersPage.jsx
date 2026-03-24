@@ -202,19 +202,30 @@ export default function OrdersPage() {
                       <td style={{ fontWeight: 700 }}>{fmtCurrency(order.total_amount ?? order.totalAmount)}</td>
                       <td><StatusBadge status={order.status} /></td>
                       <td>
-                        <span style={{
-                          display:      'inline-block',
-                          padding:      '2px 8px',
-                          borderRadius: 99,
-                          fontSize:     '0.72rem',
-                          fontWeight:   600,
-                          background:   order.payment_status === 'paid' ? '#E8F5E9' : '#FFF9C4',
-                          color:        order.payment_status === 'paid' ? 'var(--green)' : '#F57F17',
-                          border:       `1px solid ${order.payment_status === 'paid' ? '#A5D6A7' : '#F9A825'}`,
-                          textTransform:'capitalize',
-                        }}>
-                          {order.payment_status ?? 'pending'}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{
+                            fontSize:     '0.72rem',
+                            fontWeight:   600,
+                            color:        'var(--text-muted)',
+                            textTransform:'uppercase',
+                          }}>
+                            {order.payment_method === 'cod' ? 'COD' : order.payment_method === 'upi' ? 'UPI' : 'Online'}
+                          </span>
+                          <span style={{
+                            display:      'inline-block',
+                            padding:      '2px 8px',
+                            borderRadius: 99,
+                            fontSize:     '0.72rem',
+                            fontWeight:   600,
+                            background:   order.payment_status === 'paid' ? 'var(--green-pale)' : 'var(--warning-pale)',
+                            color:        order.payment_status === 'paid' ? 'var(--green)' : 'var(--warning)',
+                            border:       `1px solid ${order.payment_status === 'paid' ? 'var(--green-border)' : 'var(--border)'}`,
+                            textTransform:'capitalize',
+                            width:        'fit-content',
+                          }}>
+                            {order.payment_status ?? 'pending'}
+                          </span>
+                        </div>
                       </td>
                       <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         {fmtDate(order.created_at ?? order.createdAt)}

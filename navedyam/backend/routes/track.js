@@ -18,12 +18,31 @@ const STATUS_META = {
   delivered:        { label: 'Delivered',         desc: 'Enjoy your meal!',                            eta: 'Done' },
 };
 
-// GET /api/track/:orderId — public tracking by order ID
+// GET /api/track/:orderId — public tracking by order ID or display_id
 router.get(
   '/:orderId',
   asyncHandler(async (req, res) => {
-    const order = await Order.findById(req.params.orderId)
-      .populate('items.menu_item', 'name price image_url emoji');
+    const searchId = req.params.orderId;
+
+    // Try to find by _id first, then by display_id
+    let order;
+    if (searchId.match(/^[0-9a-fA-F]{24}$/)) {
+      // Looks like a MongoDB ObjectId
+      order = await Order.findById(searchId)
+        .populate('items.menu_item', 'name price image_url emoji');
+    }
+
+    // If not found or not a valid ObjectId, try display_id
+    if (!order) {
+      order = await Order.findOne({ display_id: searchId.toUpperCase() })
+        .populate('items.menu_item', 'name price image_url emoji');
+    }
+
+    // Also try with NVD- prefix if not provided
+    if (!order && !searchId.toUpperCase().startsWith('NVD-')) {
+      order = await Order.findOne({ display_id: 'NVD-' + searchId.toUpperCase() })
+        .populate('items.menu_item', 'name price image_url emoji');
+    }
 
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
@@ -42,11 +61,13 @@ router.get(
         id:               order._id,
         display_id:       order.display_id,
         status:           order.status,
+        total:            order.grand_total,
         grand_total:      order.grand_total,
         item_total:       order.item_total,
         delivery_fee:     order.delivery_fee,
         gst:              order.gst,
         discount:         order.discount,
+        address:          order.delivery_address?.full_address || '',
         delivery_address: order.delivery_address,
         created_at:       order.created_at,
         items:            order.items,
@@ -54,6 +75,7 @@ router.get(
       },
       steps,
       current_status: STATUS_META[order.status],
+      estimated_delivery: order.estimated_delivery_time,
     });
   })
 );
@@ -86,6 +108,7 @@ router.patch(
     if (status === 'cancelled') {
       order.cancelled_at = new Date();
       order.cancellation_reason = req.body.note || 'Cancelled by admin';
+      order.payment_status = 'cancelled';
     }
 
     await order.save();

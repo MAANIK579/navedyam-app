@@ -18,7 +18,7 @@ function inferDevApiBaseUrl() {
 export const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   inferDevApiBaseUrl() ||
-  'http://172.16.115.153:4000/api';
+  'http://10.52.5.10:4000/api';
 
 export const SOCKET_URL = BASE_URL.replace('/api', '');
 
@@ -44,7 +44,10 @@ async function request(path, options = {}) {
   }
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  if (!res.ok) {
+    const details = Array.isArray(data?.details) ? data.details.join(', ') : '';
+    throw new Error(details || data?.error || 'Something went wrong');
+  }
   return data;
 }
 

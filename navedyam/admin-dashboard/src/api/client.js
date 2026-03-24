@@ -44,10 +44,12 @@ export const api = {
   getOrderDetail: (id)         => axiosInstance.get(`/admin/orders/${id}`),
   updateOrderStatus: (id, status) =>
     axiosInstance.patch(`/track/${id}/status`, { status }),
+  updatePaymentStatus: (id, payment_status) =>
+    axiosInstance.patch(`/admin/orders/${id}/payment`, { payment_status }),
 
   /* Menu */
-  getMenuItems:     (params)   => axiosInstance.get('/menu/items', { params }),
-  getCategories:    ()         => axiosInstance.get('/menu/categories'),
+  getMenuItems:     (params)   => axiosInstance.get('/admin/menu/items', { params }),
+  getCategories:    (params)   => axiosInstance.get('/admin/menu/categories', { params }),
   createMenuItem:   (body)     => axiosInstance.post('/admin/menu/items', body),
   updateMenuItem:   (id, body) => axiosInstance.put(`/admin/menu/items/${id}`, body),
   deleteMenuItem:   (id)       => axiosInstance.delete(`/admin/menu/items/${id}`),

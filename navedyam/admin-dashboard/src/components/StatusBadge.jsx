@@ -3,18 +3,18 @@ import React from 'react';
 const STATUS_MAP = {
   placed: {
     label: 'Placed',
-    bg: '#FFFBEB', color: '#B45309', border: '#FCD34D',
-    dot: '#F59E0B',
+    bg: '#DCFCE7', color: '#14532D', border: '#86EFAC',
+    dot: '#22C55E',
   },
   confirmed: {
     label: 'Confirmed',
-    bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE',
-    dot: '#3B82F6',
+    bg: '#DCFCE7', color: '#166534', border: '#86EFAC',
+    dot: '#22C55E',
   },
   preparing: {
     label: 'Preparing',
-    bg: '#FFF7ED', color: '#C2410C', border: '#FDBA74',
-    dot: '#F97316',
+    bg: '#DCFCE7', color: '#166534', border: '#86EFAC',
+    dot: '#16A34A',
   },
   out_for_delivery: {
     label: 'Out for Delivery',
@@ -28,8 +28,8 @@ const STATUS_MAP = {
   },
   cancelled: {
     label: 'Cancelled',
-    bg: '#FEF2F2', color: '#991B1B', border: '#FCA5A5',
-    dot: '#EF4444',
+    bg: '#122519', color: '#9CC5A8', border: '#1F3328',
+    dot: '#86EFAC',
   },
 };
 

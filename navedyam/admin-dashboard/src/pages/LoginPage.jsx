@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight:      '100vh',
-      background:     'linear-gradient(135deg, #2D1208 0%, #5C2E10 50%, #3D1C08 100%)',
+      background:     'linear-gradient(135deg, #060806 0%, #0D1A13 50%, #122519 100%)',
       display:        'flex',
       alignItems:     'center',
       justifyContent: 'center',
@@ -44,8 +44,8 @@ export default function LoginPage() {
       overflow:       'hidden',
     }}>
       {/* Decorative blobs */}
-      <div style={{ position: 'fixed', top: '-15%', right: '-8%', width: 480, height: 480, borderRadius: '50%', background: 'rgba(232,115,42,0.10)', pointerEvents: 'none', filter: 'blur(60px)' }} />
-      <div style={{ position: 'fixed', bottom: '-15%', left: '-8%', width: 420, height: 420, borderRadius: '50%', background: 'rgba(245,166,35,0.08)', pointerEvents: 'none', filter: 'blur(60px)' }} />
+      <div style={{ position: 'fixed', top: '-15%', right: '-8%', width: 480, height: 480, borderRadius: '50%', background: 'rgba(22,163,74,0.10)', pointerEvents: 'none', filter: 'blur(60px)' }} />
+      <div style={{ position: 'fixed', bottom: '-15%', left: '-8%', width: 420, height: 420, borderRadius: '50%', background: 'rgba(34,197,94,0.08)', pointerEvents: 'none', filter: 'blur(60px)' }} />
 
       <div style={{
         position:     'relative',
@@ -59,7 +59,7 @@ export default function LoginPage() {
       }}>
         {/* Top brand strip */}
         <div style={{
-          background:  'linear-gradient(135deg, #C85F20, #E8732A, #F5A623)',
+          background:  'linear-gradient(135deg, #166534, #16A34A, #4ADE80)',
           padding:     '32px 32px 28px',
           textAlign:   'center',
           position:    'relative',

@@ -4,11 +4,13 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
   SafeAreaView, ActivityIndicator, Alert,
 } from 'react-native';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 import { api } from '../api/client';
 
 export default function CouponScreen({ navigation, route }) {
   const { cartTotal = 0, onApply } = route.params || {};
+  const { colors } = useTheme();
 
   const [coupons, setCoupons]     = useState([]);
   const [code, setCode]           = useState('');
@@ -52,6 +54,8 @@ export default function CouponScreen({ navigation, route }) {
       setApplying(false);
     }
   }
+
+  const styles = createStyles(colors);
 
   function renderCoupon({ item }) {
     return (
@@ -98,7 +102,7 @@ export default function CouponScreen({ navigation, route }) {
             value={code}
             onChangeText={text => { setCode(text.toUpperCase()); setInlineError(''); }}
             placeholder="Enter coupon code"
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={colors.textMuted}
             style={[styles.codeInput, !!inlineError && styles.codeInputError]}
             autoCapitalize="characters"
             returnKeyType="done"
@@ -111,7 +115,7 @@ export default function CouponScreen({ navigation, route }) {
             activeOpacity={0.85}
           >
             {applying
-              ? <ActivityIndicator color={COLORS.white} size="small" />
+              ? <ActivityIndicator color={colors.white} size="small" />
               : <Text style={styles.applyBtnText}>Apply</Text>
             }
           </TouchableOpacity>
@@ -126,7 +130,7 @@ export default function CouponScreen({ navigation, route }) {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.saffron} />
+          <ActivityIndicator size="large" color={colors.saffron} />
         </View>
       ) : coupons.length === 0 ? (
         <View style={styles.centered}>
@@ -145,10 +149,10 @@ export default function CouponScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.cream,
+    backgroundColor: colors.cream,
   },
   header: {
     flexDirection: 'row',
@@ -156,29 +160,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.cardBg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   backBtn: {
     padding: 4,
   },
   backIcon: {
     fontSize: 22,
-    color: COLORS.saffron,
+    color: colors.saffron,
     ...FONTS.bold,
   },
   headerTitle: {
     ...FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
+    color: colors.text,
   },
   inputSection: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.cardBg,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   inputRow: {
     flexDirection: 'row',
@@ -186,22 +190,22 @@ const styles = StyleSheet.create({
   },
   codeInput: {
     flex: 1,
-    backgroundColor: COLORS.creamDark,
+    backgroundColor: colors.creamDark,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: RADIUS.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: COLORS.text,
+    color: colors.text,
     ...FONTS.semibold,
     letterSpacing: 1,
   },
   codeInputError: {
-    borderColor: COLORS.error,
+    borderColor: colors.error,
   },
   applyBtn: {
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
     borderRadius: RADIUS.md,
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -210,17 +214,17 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   applyBtnDisabled: {
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
   },
   applyBtnText: {
     ...FONTS.bold,
     fontSize: 14,
-    color: COLORS.white,
+    color: colors.white,
   },
   errorText: {
     ...FONTS.regular,
     fontSize: 12,
-    color: COLORS.error,
+    color: colors.error,
     marginTop: 6,
   },
   listHeader: {
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
   listHeaderText: {
     ...FONTS.bold,
     fontSize: 15,
-    color: COLORS.text,
+    color: colors.text,
   },
   centered: {
     flex: 1,
@@ -242,7 +246,7 @@ const styles = StyleSheet.create({
   emptyText: {
     ...FONTS.regular,
     fontSize: 15,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     textAlign: 'center',
   },
   list: {
@@ -252,10 +256,10 @@ const styles = StyleSheet.create({
   couponCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: RADIUS.lg,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     marginBottom: 12,
     ...SHADOW.small,
@@ -265,35 +269,35 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   couponCodeBadge: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.saffronPale,
     borderRadius: RADIUS.sm,
     paddingHorizontal: 10,
     paddingVertical: 4,
     alignSelf: 'flex-start',
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: '#A5D6A7',
+    borderColor: colors.saffron,
   },
   couponCode: {
     ...FONTS.heavy,
     fontSize: 14,
-    color: COLORS.green,
+    color: colors.saffron,
     letterSpacing: 1,
   },
   couponDesc: {
     ...FONTS.regular,
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     lineHeight: 18,
     marginBottom: 4,
   },
   couponDiscount: {
     ...FONTS.semibold,
     fontSize: 13,
-    color: COLORS.text,
+    color: colors.text,
   },
   applyBtnSmall: {
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
     borderRadius: RADIUS.md,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -301,6 +305,6 @@ const styles = StyleSheet.create({
   applyBtnSmallText: {
     ...FONTS.bold,
     fontSize: 13,
-    color: COLORS.white,
+    color: colors.white,
   },
 });

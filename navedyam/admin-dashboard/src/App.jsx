@@ -129,7 +129,7 @@ export default function App() {
               iconTheme: { primary: '#17A34A', secondary: '#fff' },
             },
             error: {
-              iconTheme: { primary: '#E53935', secondary: '#fff' },
+              iconTheme: { primary: '#166534', secondary: '#fff' },
             },
           }}
         />

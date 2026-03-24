@@ -170,6 +170,40 @@ router.get(
   })
 );
 
+// PATCH /api/admin/orders/:id/payment — Mark COD/UPI payment as paid
+router.patch(
+  '/orders/:id/payment',
+  asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      throw new ApiError(404, 'Order not found');
+    }
+
+    // Allow marking COD and UPI orders as paid (Razorpay is auto-verified)
+    if (order.payment_method === 'razorpay' && order.payment_status === 'paid') {
+      throw new ApiError(400, 'Razorpay payment is already verified automatically');
+    }
+
+    const { payment_status } = req.body;
+    if (!['pending', 'paid', 'cancelled'].includes(payment_status)) {
+      throw new ApiError(400, 'Invalid payment status. Must be "pending", "paid" or "cancelled"');
+    }
+
+    order.payment_status = payment_status;
+    if (payment_status === 'paid') {
+      const paymentNote = order.payment_method === 'cod' ? 'Cash payment collected' : 'Payment verified manually';
+      order.status_history.push({
+        status: order.status,
+        timestamp: new Date(),
+        note: paymentNote,
+      });
+    }
+    await order.save();
+
+    res.json({ message: 'Payment status updated', payment_status: order.payment_status });
+  })
+);
+
 // GET /api/admin/users — List users with pagination and aggregate stats
 router.get(
   '/users',
@@ -208,6 +242,65 @@ router.get(
 
     const pages = Math.ceil(total / limit);
     res.json({ users, page, pages, total });
+  })
+);
+
+// POST /api/admin/menu/items — Create a menu item
+router.get(
+  '/menu/items',
+  asyncHandler(async (req, res) => {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 200);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
+
+    if (req.query.stock === 'in_stock') {
+      filter.is_available = true;
+    } else if (req.query.stock === 'out_of_stock') {
+      filter.is_available = false;
+    }
+
+    const [items, total] = await Promise.all([
+      MenuItem.find(filter)
+        .populate('category', 'name slug emoji is_active')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      MenuItem.countDocuments(filter),
+    ]);
+
+    res.json({
+      items,
+      page,
+      pages: Math.ceil(total / limit),
+      total,
+    });
+  })
+);
+
+router.get(
+  '/menu/categories',
+  asyncHandler(async (req, res) => {
+    const status = req.query.status;
+    const filter = {};
+
+    if (status === 'active') {
+      filter.is_active = true;
+    } else if (status === 'inactive') {
+      filter.is_active = false;
+    }
+
+    const categories = await Category.find(filter)
+      .sort({ sort_order: 1, name: 1 })
+      .lean();
+
+    res.json({ categories });
   })
 );
 

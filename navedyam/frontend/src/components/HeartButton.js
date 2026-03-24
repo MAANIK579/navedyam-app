@@ -1,11 +1,12 @@
-// src/components/HeartButton.js
+// src/components/HeartButton.js — with theme support
 import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../context/FavoritesContext';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function HeartButton({ itemId, style, size = 20 }) {
+  const { colors } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(itemId);
 
@@ -19,7 +20,7 @@ export default function HeartButton({ itemId, style, size = 20 }) {
       <Ionicons
         name={favorited ? 'heart' : 'heart-outline'}
         size={size}
-        color={favorited ? '#E53E3E' : COLORS.textMuted}
+        color={favorited ? colors.saffron : colors.textMuted}
       />
     </TouchableOpacity>
   );

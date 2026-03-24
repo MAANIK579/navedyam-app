@@ -1,20 +1,23 @@
-// src/components/EmptyState.js
+// src/components/EmptyState.js — with theme support
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS } from '../theme';
 import { Button } from './index';
 
 export default function EmptyState({ emoji, iconName, title, subtitle, action }) {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
       {iconName ? (
-        <Ionicons name={iconName} size={56} color={COLORS.border} style={{ marginBottom: 20 }} />
+        <Ionicons name={iconName} size={56} color={colors.border} style={{ marginBottom: 20 }} />
       ) : !!emoji && (
         <Text style={styles.emoji}>{emoji}</Text>
       )}
-      <Text style={styles.title}>{title}</Text>
-      {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      {!!subtitle && <Text style={[styles.subtitle, { color: colors.textMuted }]}>{subtitle}</Text>}
       {action && (
         <Button
           title={action.label}
@@ -42,14 +45,12 @@ const styles = StyleSheet.create({
   title: {
     ...FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     ...FONTS.regular,
     fontSize: 14,
-    color: COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,

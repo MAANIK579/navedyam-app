@@ -10,7 +10,7 @@ import { TrendUpIcon, TrendDownIcon } from './Icons';
  *   color      (hex string – accent colour)
  *   trend      (optional) { direction: 'up'|'down', value: string }
  */
-export default function StatCard({ title, value, icon, color = '#E8732A', trend }) {
+export default function StatCard({ title, value, icon, color = '#16A34A', trend }) {
   const iconBg   = color + '18';
   const iconBorder = color + '25';
 

@@ -99,9 +99,9 @@ export default function DashboardPage() {
   const totalUsers   = stats.total_users   ?? stats.totalUsers   ?? 0;
 
   const RANK_COLORS = [
-    { bg: '#FFFBEB', num: '#B45309', border: '#FDE68A' },
+    { bg: '#DCFCE7', num: '#14532D', border: '#86EFAC' },
     { bg: 'var(--cream-dark)', num: 'var(--text-muted)', border: 'var(--border)' },
-    { bg: '#FFF7ED', num: '#C2410C', border: '#FED7AA' },
+    { bg: '#DCFCE7', num: '#166534', border: '#86EFAC' },
   ];
 
   return (

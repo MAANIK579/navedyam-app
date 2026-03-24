@@ -76,6 +76,14 @@ router.post(
       quantity: qty,
     }));
 
+    // Calculate estimated delivery time based on items
+    const totalQty = resolvedItems.reduce((sum, { qty }) => sum + qty, 0);
+    const baseTime = 25; // Base prep time in minutes
+    const perItemTime = 3; // Additional minutes per item
+    const deliveryTime = 10; // Fixed delivery time
+    const estimatedMinutes = Math.min(baseTime + (totalQty * perItemTime) + deliveryTime, 60);
+    const estimatedDelivery = new Date(Date.now() + estimatedMinutes * 60 * 1000);
+
     const order = await Order.create({
       user: req.user.id,
       items: orderItems,
@@ -88,6 +96,7 @@ router.post(
       notes: notes || '',
       coupon_code: coupon_code || '',
       payment_method: payment_method || 'cod',
+      estimated_delivery_time: estimatedDelivery,
     });
 
     // Record coupon usage
@@ -95,12 +104,12 @@ router.post(
       await applyCouponUsage(couponId, req.user.id);
     }
 
-    // Send notification to user
+    // Send notification to user with dynamic ETA
     try {
       await sendOrderNotification(
         req.user.id,
         `Order ${order.display_id} Placed!`,
-        `Your order is confirmed. Estimated delivery: 35-45 mins.`,
+        `Your order is confirmed. Estimated delivery: ${estimatedMinutes} mins.`,
         { orderId: order._id.toString(), status: 'placed' }
       );
     } catch (err) {
@@ -131,6 +140,8 @@ router.post(
         gst: order.gst,
         discount: order.discount,
         delivery_address: order.delivery_address,
+        estimated_delivery_time: order.estimated_delivery_time,
+        estimated_minutes: estimatedMinutes,
         items: resolvedItems.map(({ menuItem, qty }) => ({
           name: menuItem.name,
           price: menuItem.price,
@@ -254,6 +265,7 @@ router.post(
     }
 
     order.status = 'cancelled';
+    order.payment_status = 'cancelled';
     order.cancelled_at = new Date();
     order.cancellation_reason = req.body.reason || 'Cancelled by user';
     order.status_history.push({

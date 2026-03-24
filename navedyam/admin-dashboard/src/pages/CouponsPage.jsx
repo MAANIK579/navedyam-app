@@ -171,9 +171,9 @@ export default function CouponsPage() {
                     <td>
                       <span style={{
                         padding: '2px 8px', borderRadius: 99, fontSize: '0.72rem', fontWeight: 600,
-                        background: coupon.discount_type === 'percentage' ? '#E3F2FD' : '#E8F5E9',
+                        background: coupon.discount_type === 'percentage' ? '#DCFCE7' : '#E8F5E9',
                         color:      coupon.discount_type === 'percentage' ? '#1565C0' : 'var(--green)',
-                        border: `1px solid ${coupon.discount_type === 'percentage' ? '#90CAF9' : '#A5D6A7'}`,
+                        border: `1px solid ${coupon.discount_type === 'percentage' ? '#86EFAC' : '#A5D6A7'}`,
                       }}>
                         {coupon.discount_type === 'percentage' ? '%' : '₹ Flat'}
                       </span>

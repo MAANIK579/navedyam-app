@@ -1,4 +1,4 @@
-// src/screens/MenuScreen.js — Enhanced with shared components and pull-to-refresh
+// src/screens/MenuScreen.js — Enhanced with item detail modal and theme support
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, ScrollView, StyleSheet,
@@ -7,20 +7,24 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
-import { VegBadge } from '../components';
+import { useTheme } from '../context/ThemeContext';
+import { VegBadge, ItemDetailModal } from '../components';
 import HeartButton from '../components/HeartButton';
 import StarRating from '../components/StarRating';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 
 export default function MenuScreen({ route, navigation }) {
   const { category: initialCat } = route.params || {};
-  const { addItem, removeItem, getQty } = useCart();
+  const { addItem, removeItem, getQty, itemCount, itemTotal } = useCart();
+  const { colors, isDark } = useTheme();
 
   const [categories, setCategories] = useState([]);
   const [items,      setItems]      = useState([]);
   const [activeCat,  setActiveCat]  = useState(initialCat || 'all');
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Load categories once
   useEffect(() => {
@@ -34,11 +38,11 @@ export default function MenuScreen({ route, navigation }) {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity onPress={() => navigation.navigate('Search')} style={{ marginRight: 16 }}>
-          <Ionicons name="search-outline" size={22} color={COLORS.cream} />
+          <Ionicons name="search-outline" size={22} color={colors.white} />
         </TouchableOpacity>
       ),
     });
-  }, [navigation]);
+  }, [navigation, colors, isDark]);
 
   // Load items when category changes
   const loadItems = useCallback(async (isRefresh = false) => {
@@ -62,11 +66,20 @@ export default function MenuScreen({ route, navigation }) {
     loadItems(true);
   }
 
+  const styles = createStyles(colors, isDark);
+
   function renderItem({ item }) {
     const qty   = getQty(item._id || item.id);
     const itemId = item._id || item.id;
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.85}
+        onPress={() => {
+          setSelectedItem(item);
+          setShowDetailModal(true);
+        }}
+      >
         <View style={styles.cardEmoji}>
           <Text style={{ fontSize: 48 }}>{item.emoji}</Text>
           <View style={styles.vegOverlay}>
@@ -92,60 +105,71 @@ export default function MenuScreen({ route, navigation }) {
             {qty === 0 ? (
               <TouchableOpacity
                 style={styles.addBtn}
-                onPress={() => addItem({ ...item, id: itemId })}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  addItem({ ...item, id: itemId });
+                }}
                 activeOpacity={0.8}
               >
-                <Ionicons name="add" size={16} color={COLORS.white} />
+                <Ionicons name="add" size={16} color={colors.white} />
                 <Text style={styles.addBtnText}>ADD</Text>
               </TouchableOpacity>
             ) : (
               <View style={styles.qtyCtrl}>
                 <TouchableOpacity style={styles.qtyBtn} onPress={() => removeItem(itemId)}>
-                  <Ionicons name="remove" size={16} color={COLORS.text} />
+                  <Ionicons name="remove" size={16} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.qtyNum}>{qty}</Text>
                 <TouchableOpacity
-                  style={[styles.qtyBtn, { backgroundColor: COLORS.saffron, borderColor: COLORS.saffron }]}
+                  style={[styles.qtyBtn, { backgroundColor: colors.saffron, borderColor: colors.saffron }]}
                   onPress={() => addItem({ ...item, id: itemId })}
                 >
-                  <Ionicons name="add" size={16} color={COLORS.white} />
+                  <Ionicons name="add" size={16} color={colors.white} />
                 </TouchableOpacity>
               </View>
             )}
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
   return (
     <View style={styles.screen}>
       {/* Category filter */}
-      <ScrollView
-        horizontal showsHorizontalScrollIndicator={false}
-        style={styles.filterBar} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-      >
-        {categories.map(cat => {
-          const isActive = activeCat === (cat._id || cat.id);
-          return (
-            <TouchableOpacity
-              key={cat._id || cat.id}
-              style={[styles.catBtn, isActive && styles.catBtnActive]}
-              onPress={() => setActiveCat(cat._id || cat.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.catLabel, isActive && { color: COLORS.white }]}>
-                {cat.name}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.filterBarContainer}>
+        <ScrollView
+          horizontal showsHorizontalScrollIndicator={false}
+          style={styles.filterBar} contentContainerStyle={{ paddingHorizontal: 16 }}
+        >
+          {categories.map((cat, index) => {
+            const isActive = activeCat === (cat._id || cat.id);
+            const hasEmoji = cat.emoji && cat._id !== 'all';
+            return (
+              <TouchableOpacity
+                key={cat._id || cat.id}
+                style={[
+                  styles.catBtn,
+                  isActive && styles.catBtnActive,
+                  index < categories.length - 1 && { marginRight: 10 }
+                ]}
+                onPress={() => setActiveCat(cat._id || cat.id)}
+                activeOpacity={0.8}
+              >
+                {hasEmoji ? <Text style={styles.catEmoji}>{cat.emoji}</Text> : null}
+                <Text style={[styles.catLabel, isActive && styles.catLabelActive]}>
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {loading && !refreshing ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.saffron} />
-          <Text style={{ color: COLORS.textMuted, marginTop: 10, fontSize: 14 }}>Loading menu...</Text>
+          <ActivityIndicator size="large" color={colors.saffron} />
+          <Text style={{ color: colors.textMuted, marginTop: 10, fontSize: 14 }}>Loading menu...</Text>
         </View>
       ) : (
         <FlatList
@@ -158,66 +182,135 @@ export default function MenuScreen({ route, navigation }) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[COLORS.saffron]}
-              tintColor={COLORS.saffron}
+              colors={[colors.saffron]}
+              tintColor={colors.saffron}
             />
           }
           ListEmptyComponent={
             <View style={styles.center}>
-              <Ionicons name="restaurant-outline" size={48} color={COLORS.border} />
-              <Text style={{ color: COLORS.textMuted, marginTop: 10, fontSize: 15 }}>No items found</Text>
+              <Ionicons name="restaurant-outline" size={48} color={colors.border} />
+              <Text style={{ color: colors.textMuted, marginTop: 10, fontSize: 15 }}>No items found</Text>
             </View>
           }
         />
+      )}
+
+      {/* Item Detail Modal */}
+      <ItemDetailModal
+        visible={showDetailModal}
+        item={selectedItem}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedItem(null);
+        }}
+        navigation={navigation}
+      />
+
+      {/* Floating Cart Button - Swiggy style */}
+      {itemCount > 0 && (
+        <TouchableOpacity
+          style={styles.floatingCart}
+          onPress={() => navigation.navigate('Cart')}
+          activeOpacity={0.9}
+        >
+          <View style={styles.floatingCartLeft}>
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{itemCount}</Text>
+            </View>
+            <View>
+              <Text style={styles.floatingCartItems}>{itemCount} item{itemCount > 1 ? 's' : ''}</Text>
+              <Text style={styles.floatingCartTotal}>₹{itemTotal}</Text>
+            </View>
+          </View>
+          <View style={styles.floatingCartRight}>
+            <Text style={styles.floatingCartCta}>View Cart</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.white} />
+          </View>
+        </TouchableOpacity>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen:    { flex: 1, backgroundColor: COLORS.cream },
-  filterBar: { paddingVertical: 12, maxHeight: 60, backgroundColor: COLORS.white },
-  catBtn: {
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.cardBg,
-    borderWidth: 1.5, borderColor: COLORS.border,
+const createStyles = (colors, isDark) => StyleSheet.create({
+  screen:    { flex: 1, backgroundColor: colors.cream },
+  filterBarContainer: {
+    backgroundColor: colors.cardBg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    ...SHADOW.small,
   },
-  catBtnActive: { backgroundColor: COLORS.saffron, borderColor: COLORS.saffron },
-  catLabel: { fontSize: 13, ...FONTS.semibold, color: COLORS.textMuted },
+  filterBar: { paddingVertical: 14 },
+  catBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: RADIUS.full,
+    backgroundColor: colors.creamDark,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  catBtnActive: {
+    backgroundColor: colors.saffron,
+    borderColor: colors.saffron,
+    ...SHADOW.small,
+  },
+  catEmoji: { fontSize: 16, marginRight: 6 },
+  catLabel: { fontSize: 13, ...FONTS.semibold, color: colors.textMuted },
+  catLabelActive: { color: colors.white },
   list: { padding: 16, gap: 14, paddingBottom: 24 },
   card: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: RADIUS.lg,
-    borderWidth: 1, borderColor: COLORS.borderLight,
+    borderWidth: 1, borderColor: colors.borderLight,
     overflow: 'hidden', ...SHADOW.small,
   },
   cardEmoji: {
-    height: 120, backgroundColor: COLORS.creamDark,
+    height: 120, backgroundColor: colors.creamDark,
     alignItems: 'center', justifyContent: 'center',
   },
   vegOverlay: { position: 'absolute', top: 10, left: 10 },
   heartOverlay: { position: 'absolute', top: 8, right: 8 },
   cardBody:   { padding: 14 },
-  itemName:   { fontSize: 16, ...FONTS.bold, color: COLORS.text, marginBottom: 4 },
+  itemName:   { fontSize: 16, ...FONTS.bold, color: colors.text, marginBottom: 4 },
   ratingRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
-  ratingCount: { fontSize: 11, color: COLORS.textMuted },
-  itemDesc:   { fontSize: 13, color: COLORS.textMuted, lineHeight: 18, marginBottom: 12 },
+  ratingCount: { fontSize: 11, color: colors.textMuted },
+  itemDesc:   { fontSize: 13, color: colors.textMuted, lineHeight: 18, marginBottom: 12 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  price:      { fontSize: 18, ...FONTS.bold, color: COLORS.saffronDeep },
+  price:      { fontSize: 18, ...FONTS.bold, color: colors.saffronDeep },
   addBtn: {
-    backgroundColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
     borderRadius: RADIUS.sm, paddingHorizontal: 16, paddingVertical: 8,
     flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  addBtnText: { color: COLORS.white, ...FONTS.bold, fontSize: 13 },
+  addBtnText: { color: colors.white, ...FONTS.bold, fontSize: 13 },
   qtyCtrl:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   qtyBtn: {
     width: 30, height: 30, borderRadius: 8,
-    backgroundColor: COLORS.creamDark,
-    borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: colors.creamDark,
+    borderWidth: 1.5, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  qtyNum:     { fontSize: 16, ...FONTS.bold, minWidth: 22, textAlign: 'center' },
+  qtyNum:     { fontSize: 16, ...FONTS.bold, color: colors.text, minWidth: 22, textAlign: 'center' },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48 },
+  // Floating cart button
+  floatingCart: {
+    position: 'absolute', bottom: 20, left: 16, right: 16,
+    backgroundColor: colors.saffron, borderRadius: RADIUS.lg,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 14, paddingHorizontal: 18,
+    ...SHADOW.large,
+  },
+  floatingCartLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cartBadge: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.saffronDeep,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cartBadgeText: { ...FONTS.bold, fontSize: 16, color: colors.white },
+  floatingCartItems: { ...FONTS.medium, fontSize: 12, color: colors.textMuted },
+  floatingCartTotal: { ...FONTS.bold, fontSize: 17, color: colors.white },
+  floatingCartRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  floatingCartCta: { ...FONTS.bold, fontSize: 15, color: colors.white },
 });

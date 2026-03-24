@@ -1,14 +1,15 @@
-// App.js — Root navigation with auth flow (enhanced with vector icons)
+// App.js — Root navigation with auth flow and theme support
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AuthProvider, useAuth }            from './src/context/AuthContext';
-import { CartProvider, useCart }            from './src/context/CartContext';
-import { FavoritesProvider }                from './src/context/FavoritesContext';
+import { ThemeProvider, useTheme }      from './src/context/ThemeContext';
+import { AuthProvider, useAuth }        from './src/context/AuthContext';
+import { CartProvider, useCart }        from './src/context/CartContext';
+import { FavoritesProvider }            from './src/context/FavoritesContext';
 import { NotificationProvider, useNotifications } from './src/context/NotificationContext';
 
 // Auth screens
@@ -32,8 +33,13 @@ import OrderDetailScreen    from './src/screens/OrderDetailScreen';
 import ReviewScreen         from './src/screens/ReviewScreen';
 import NotificationsScreen  from './src/screens/NotificationsScreen';
 import CouponScreen         from './src/screens/CouponScreen';
+import HelpScreen           from './src/screens/HelpScreen';
+import OrderRatingScreen    from './src/screens/OrderRatingScreen';
+import OrderSuccessScreen   from './src/screens/OrderSuccessScreen';
+import OrderHistoryScreen   from './src/screens/OrderHistoryScreen';
+import MyReviewsScreen      from './src/screens/MyReviewsScreen';
 
-import { COLORS, FONTS } from './src/theme';
+import { FONTS } from './src/theme';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -46,17 +52,17 @@ const TAB_ICONS = {
   Profile: { focused: 'person',     unfocused: 'person-outline' },
 };
 
-function TabIcon({ routeName, focused, badgeCount }) {
+function TabIcon({ routeName, focused, badgeCount, colors }) {
   const icons = TAB_ICONS[routeName] || TAB_ICONS.Home;
   const iconName = focused ? icons.focused : icons.unfocused;
-  const color = focused ? COLORS.saffronLight : '#A08060';
+  const color = focused ? colors.saffronLight : colors.tabInactive;
 
   return (
     <View style={{ alignItems: 'center', position: 'relative' }}>
       <Ionicons name={iconName} size={24} color={color} />
       {badgeCount > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeTxt}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
+        <View style={[styles.badge, { backgroundColor: colors.saffron, borderColor: colors.tabBarBg }]}>
+          <Text style={[styles.badgeTxt, { color: colors.white }]}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
         </View>
       )}
     </View>
@@ -66,19 +72,20 @@ function TabIcon({ routeName, focused, badgeCount }) {
 function MainTabs() {
   const { itemCount } = useCart();
   const { unreadCount } = useNotifications();
+  const { colors } = useTheme();
 
   const screenOpts = {
     tabBarStyle: {
-      backgroundColor: COLORS.brown,
-      borderTopColor: 'rgba(255,255,255,0.08)',
+      backgroundColor: colors.tabBarBg,
+      borderTopColor: colors.tabBarBorder,
       height: 64, paddingBottom: 8, paddingTop: 4,
     },
-    tabBarActiveTintColor:   COLORS.saffronLight,
-    tabBarInactiveTintColor: '#A08060',
+    tabBarActiveTintColor:   colors.saffronLight,
+    tabBarInactiveTintColor: colors.tabInactive,
     tabBarLabelStyle:        { ...FONTS.semibold, fontSize: 11 },
-    headerStyle:             { backgroundColor: COLORS.brown },
-    headerTitleStyle:        { color: COLORS.cream, ...FONTS.bold, fontSize: 18 },
-    headerTintColor:         COLORS.cream,
+    headerStyle:             { backgroundColor: colors.brown },
+    headerTitleStyle:        { color: colors.white, ...FONTS.bold, fontSize: 18 },
+    headerTintColor:         colors.white,
   };
 
   return (
@@ -86,35 +93,35 @@ function MainTabs() {
       <Tab.Screen name="Home" component={HomeScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ focused }) => <TabIcon routeName="Home" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Home" focused={focused} colors={colors} />,
           tabBarLabel: 'Home',
         }}
       />
       <Tab.Screen name="Menu" component={MenuScreen}
         options={{
           title: 'Menu',
-          tabBarIcon: ({ focused }) => <TabIcon routeName="Menu" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Menu" focused={focused} colors={colors} />,
           tabBarLabel: 'Menu',
         }}
       />
       <Tab.Screen name="Cart" component={CartScreen}
         options={{
           title: 'Your Cart',
-          tabBarIcon: ({ focused }) => <TabIcon routeName="Cart" focused={focused} badgeCount={itemCount} />,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Cart" focused={focused} badgeCount={itemCount} colors={colors} />,
           tabBarLabel: 'Cart',
         }}
       />
       <Tab.Screen name="Track" component={TrackScreen}
         options={{
           title: 'Track Order',
-          tabBarIcon: ({ focused }) => <TabIcon routeName="Track" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Track" focused={focused} colors={colors} />,
           tabBarLabel: 'Track',
         }}
       />
       <Tab.Screen name="Profile" component={ProfileScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ focused }) => <TabIcon routeName="Profile" focused={focused} badgeCount={unreadCount} />,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Profile" focused={focused} badgeCount={unreadCount} colors={colors} />,
           tabBarLabel: 'Profile',
         }}
       />
@@ -131,13 +138,15 @@ function AuthStack() {
   );
 }
 
-const commonHeader = {
-  headerStyle:      { backgroundColor: COLORS.brown },
-  headerTitleStyle: { color: COLORS.cream, ...FONTS.bold },
-  headerTintColor:  COLORS.cream,
-};
-
 function AppStack() {
+  const { colors } = useTheme();
+
+  const commonHeader = {
+    headerStyle:      { backgroundColor: colors.brown },
+    headerTitleStyle: { color: colors.white, ...FONTS.bold },
+    headerTintColor:  colors.white,
+  };
+
   return (
     <Stack.Navigator screenOptions={commonHeader}>
       <Stack.Screen name="MainTabs"      component={MainTabs}           options={{ headerShown: false }} />
@@ -150,57 +159,85 @@ function AppStack() {
       <Stack.Screen name="Review"        component={ReviewScreen}       options={{ title: 'Rate Your Order' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="Coupon"        component={CouponScreen}       options={{ title: 'Apply Coupon' }} />
-      <Stack.Screen name="MyReviews"     component={ReviewScreen}       options={{ title: 'My Reviews' }} />
+      <Stack.Screen name="Help"          component={HelpScreen}         options={{ headerShown: false }} />
+      <Stack.Screen name="OrderRating"   component={OrderRatingScreen}  options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="OrderSuccess"  component={OrderSuccessScreen} options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="MyReviews"     component={MyReviewsScreen}    options={{ title: 'My Reviews' }} />
+      <Stack.Screen name="OrderHistory"  component={OrderHistoryScreen} options={{ title: 'Order History' }} />
     </Stack.Navigator>
   );
 }
 
 function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { colors, isDark, loading: themeLoading } = useTheme();
+
+  const loading = authLoading || themeLoading;
 
   if (loading) {
     return (
-      <View style={styles.splash}>
-        <Ionicons name="flame" size={56} color={COLORS.saffron} />
-        <Text style={styles.splashTitle}>Navedyam</Text>
-        <Text style={styles.splashSub}>CLOUD KITCHEN  ·  BHIWANI</Text>
-        <ActivityIndicator color={COLORS.saffronLight} style={{ marginTop: 32 }} size="large" />
+      <View style={[styles.splash, { backgroundColor: colors.brown }]}>
+        <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.brown} />
+        <Ionicons name="flame" size={56} color={colors.saffron} />
+        <Text style={[styles.splashTitle, { color: colors.white }]}>Navedyam</Text>
+        <Text style={[styles.splashSub, { color: colors.turmeric }]}>CLOUD KITCHEN  ·  BHIWANI</Text>
+        <ActivityIndicator color={colors.saffronLight} style={{ marginTop: 32 }} size="large" />
       </View>
     );
   }
 
-  return user ? <AppStack /> : <AuthStack />;
+  // Create navigation theme based on current mode
+  const navTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      primary: colors.saffron,
+      background: colors.cream,
+      card: colors.brown,
+      text: colors.text,
+      border: colors.border,
+    },
+  };
+
+  return (
+    <>
+      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.brown} />
+      <NavigationContainer theme={navTheme}>
+        {user ? <AppStack /> : <AuthStack />}
+      </NavigationContainer>
+    </>
+  );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <FavoritesProvider>
-          <CartProvider>
-            <NavigationContainer>
+    <ThemeProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <FavoritesProvider>
+            <CartProvider>
               <RootNavigator />
-            </NavigationContainer>
-          </CartProvider>
-        </FavoritesProvider>
-      </NotificationProvider>
-    </AuthProvider>
+            </CartProvider>
+          </FavoritesProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   splash: {
-    flex: 1, backgroundColor: COLORS.brown,
+    flex: 1,
     alignItems: 'center', justifyContent: 'center',
   },
-  splashTitle: { color: COLORS.cream, fontSize: 36, ...FONTS.heavy, letterSpacing: 1, marginTop: 16 },
-  splashSub:   { color: COLORS.turmeric, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', marginTop: 4 },
+  splashTitle: { fontSize: 36, ...FONTS.heavy, letterSpacing: 1, marginTop: 16 },
+  splashSub:   { fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', marginTop: 4 },
   badge: {
     position: 'absolute', top: -6, right: -12,
-    backgroundColor: COLORS.saffron, borderRadius: 10,
+    borderRadius: 10,
     minWidth: 18, height: 18, alignItems: 'center',
     justifyContent: 'center', paddingHorizontal: 4,
-    borderWidth: 2, borderColor: COLORS.brown,
+    borderWidth: 2,
   },
-  badgeTxt: { color: COLORS.white, fontSize: 9, ...FONTS.bold },
+  badgeTxt: { fontSize: 9, ...FONTS.bold },
 });

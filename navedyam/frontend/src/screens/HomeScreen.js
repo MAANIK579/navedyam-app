@@ -1,35 +1,84 @@
-// src/screens/HomeScreen.js — Enhanced professional UI
-import React from 'react';
+// src/screens/HomeScreen.js — Swiggy-like enhanced UI with theme support
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, StatusBar,
+  TouchableOpacity, StatusBar, RefreshControl, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
 
-const OFFERS = [
-  { icon: 'gift-outline',    title: 'New User Offer', desc: 'Get Rs.50 off on your first order  ·  Use: WELCOME50', color: '#FEF3C7', accent: '#D97706' },
-  { icon: 'fast-food-outline', title: 'Combo Deal',   desc: 'Thali + Lassi at just Rs.199',                         color: '#D1FAE5', accent: '#059669' },
-  { icon: 'car-outline',     title: 'Free Delivery',  desc: 'On orders above Rs.299  ·  Use: FREEDELIVERY',          color: '#DBEAFE', accent: '#2563EB' },
-];
-
-const QUICK_CATS = [
-  { id: 'thali',     label: 'Thali',     icon: 'grid-outline',       bg: '#FEF3C7' },
-  { id: 'dal-sabzi', label: 'Dal Sabzi', icon: 'leaf-outline',       bg: '#D1FAE5' },
-  { id: 'roti',      label: 'Roti',      icon: 'pizza-outline',      bg: '#FEE2E2' },
-  { id: 'nonveg',    label: 'Non-Veg',   icon: 'flame-outline',      bg: '#FFE4E6' },
-  { id: 'snacks',    label: 'Snacks',    icon: 'cafe-outline',       bg: '#DBEAFE' },
-  { id: 'dessert',   label: 'Dessert',   icon: 'ice-cream-outline',  bg: '#F3E8FF' },
-];
+import { FONTS, RADIUS, SHADOW } from '../theme';
+import api from '../api/client';
 
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
+  const { applyCoupon } = useCart();
+  const { colors, isDark } = useTheme();
   const firstName = user?.name?.split(' ')[0] || 'Guest';
+  const [refreshing, setRefreshing] = useState(false);
+  const [popularItems, setPopularItems] = useState([
+    { id: '1', name: 'Thali Special', emoji: '🍛', price: 149, tag: 'Bestseller' },
+    { id: '2', name: 'Dal Makhani', emoji: '🥘', price: 89, tag: 'Must Try' },
+    { id: '3', name: 'Butter Roti', emoji: '🫓', price: 15, tag: 'Popular' },
+    { id: '4', name: 'Paneer Curry', emoji: '🧀', price: 129, tag: 'Chef Special' },
+  ]);
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  const QUICK_CATS = [
+    { id: 'thali',     label: 'Thali',     icon: 'grid-outline',       bg: isDark ? colors.saffronPale : '#DCFCE7' },
+    { id: 'dal-sabzi', label: 'Dal Sabzi', icon: 'leaf-outline',       bg: isDark ? colors.saffronPale : '#D1FAE5' },
+    { id: 'roti',      label: 'Roti',      icon: 'pizza-outline',      bg: isDark ? colors.saffronPale : '#DCFCE7' },
+    { id: 'nonveg',    label: 'Non-Veg',   icon: 'flame-outline',      bg: isDark ? colors.saffronPale : '#FEE2E2' },
+    { id: 'snacks',    label: 'Snacks',    icon: 'cafe-outline',       bg: isDark ? colors.saffronPale : '#DCFCE7' },
+    { id: 'dessert',   label: 'Dessert',   icon: 'ice-cream-outline',  bg: isDark ? colors.saffronPale : '#DCFCE7' },
+  ];
+
+  async function onRefresh() {
+    setRefreshing(true);
+    try {
+      const data = await api.getMenuItems({ limit: 4, sort: 'popular' });
+      if (data.items?.length > 0) {
+        setPopularItems(data.items.slice(0, 4).map(item => ({
+          id: item._id || item.id,
+          name: item.name,
+          emoji: item.emoji,
+          price: item.price,
+          tag: item.tags?.[0] || 'Popular',
+        })));
+      }
+    } catch (err) {}
+    setRefreshing(false);
+  }
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.02, duration: 1000, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  const styles = createStyles(colors, isDark);
 
   return (
-    <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.brown} />
+    <ScrollView
+      style={styles.screen}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[colors.saffron]}
+          tintColor={colors.saffron}
+        />
+      }
+    >
+      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.brown} />
 
       {/* Hero */}
       <View style={styles.hero}>
@@ -42,7 +91,7 @@ export default function HomeScreen({ navigation }) {
             style={styles.notifBtn}
             onPress={() => navigation.navigate('Notifications')}
           >
-            <Ionicons name="notifications-outline" size={22} color={COLORS.cream} />
+            <Ionicons name="notifications-outline" size={22} color={colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -54,7 +103,7 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Search')}
           activeOpacity={0.9}
         >
-          <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.6)" />
+          <Ionicons name="search-outline" size={18} color={colors.textMuted} />
           <Text style={styles.searchPlaceholder}>Search for thali, dal, roti...</Text>
         </TouchableOpacity>
 
@@ -65,27 +114,29 @@ export default function HomeScreen({ navigation }) {
             { icon: 'bag-check-outline',    val: '2000+', lbl: 'Orders' },
           ].map(s => (
             <View key={s.lbl} style={styles.stat}>
-              <Ionicons name={s.icon} size={16} color={COLORS.saffronLight} style={{ marginBottom: 2 }} />
+              <Ionicons name={s.icon} size={16} color={colors.saffronLight} style={{ marginBottom: 2 }} />
               <Text style={styles.statNum}>{s.val}</Text>
               <Text style={styles.statLbl}>{s.lbl}</Text>
             </View>
           ))}
         </View>
 
-        <TouchableOpacity
-          style={styles.orderNowBtn}
-          onPress={() => navigation.navigate('Menu')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="restaurant-outline" size={20} color={COLORS.white} />
-          <Text style={styles.orderNowText}>Order Now</Text>
-          <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <TouchableOpacity
+            style={styles.orderNowBtn}
+            onPress={() => navigation.navigate('Menu')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="restaurant-outline" size={20} color={colors.white} />
+            <Text style={styles.orderNowText}>Order Now</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.white} />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       <View style={styles.body}>
         {/* Quick categories */}
-        <Text style={styles.sectionLabel}>Browse by Category</Text>
+        <Text style={styles.sectionLabel}>What are you craving?</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
           {QUICK_CATS.map(cat => (
             <TouchableOpacity
@@ -95,31 +146,72 @@ export default function HomeScreen({ navigation }) {
               activeOpacity={0.8}
             >
               <View style={[styles.catIconWrap, { backgroundColor: cat.bg }]}>
-                <Ionicons name={cat.icon} size={22} color={COLORS.brown} />
+                <Ionicons name={cat.icon} size={22} color={isDark ? colors.green : colors.brown} />
               </View>
               <Text style={styles.catLabel}>{cat.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Offers */}
-        <Text style={styles.sectionLabel}>Today's Offers</Text>
-        {OFFERS.map(o => (
-          <View key={o.title} style={[styles.offerCard, { backgroundColor: o.color }]}>
-            <View style={[styles.offerIconWrap, { backgroundColor: o.accent + '20' }]}>
-              <Ionicons name={o.icon} size={22} color={o.accent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.offerTitle, { color: o.accent }]}>{o.title}</Text>
-              <Text style={styles.offerDesc}>{o.desc}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={o.accent} />
+        {/* Popular Items */}
+        <View style={styles.popularSection}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>Popular Right Now</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Menu')}>
+              <Text style={styles.seeAll}>See all</Text>
+            </TouchableOpacity>
           </View>
-        ))}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: 12, paddingRight: 16 }}
+          >
+            {popularItems.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.popularCard}
+                onPress={() => navigation.navigate('Menu')}
+                activeOpacity={0.85}
+              >
+                <View style={styles.popularTag}>
+                  <Text style={styles.popularTagText}>{item.tag}</Text>
+                </View>
+                <Text style={styles.popularEmoji}>{item.emoji}</Text>
+                <Text style={styles.popularName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.popularPrice}>₹{item.price}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: isDark ? colors.saffronPale : '#DCFCE7' }]}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Ionicons name="time-outline" size={24} color={colors.saffron} />
+            <Text style={styles.quickActionText}>Order History</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: isDark ? colors.saffronPale : '#D1FAE5' }]}
+            onPress={() => navigation.navigate('Favorites')}
+          >
+            <Ionicons name="heart-outline" size={24} color={colors.saffron} />
+            <Text style={styles.quickActionText}>Favorites</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: isDark ? colors.saffronPale : '#DCFCE7' }]}
+            onPress={() => navigation.navigate('Coupon')}
+          >
+            <Ionicons name="pricetag-outline" size={24} color={colors.saffron} />
+            <Text style={styles.quickActionText}>Coupons</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Ionicons name="leaf-outline" size={16} color={COLORS.green} style={{ marginBottom: 6 }} />
+          <Ionicons name="leaf-outline" size={16} color={colors.green} style={{ marginBottom: 6 }} />
           <Text style={styles.footerText}>Pure ingredients · Made fresh daily · Bhiwani, Haryana</Text>
         </View>
       </View>
@@ -127,43 +219,47 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.cream },
+const createStyles = (colors, isDark) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.cream },
   hero: {
-    backgroundColor: COLORS.brown,
+    backgroundColor: colors.brown,
     padding: 24, paddingTop: 52, paddingBottom: 28,
   },
   heroHeader: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
   },
-  greeting: { color: COLORS.turmeric, fontSize: 14, ...FONTS.medium, letterSpacing: 0.5 },
-  heroTitle: { color: COLORS.cream, fontSize: 26, ...FONTS.heavy, marginTop: 6, lineHeight: 34 },
-  heroSub:   { color: '#A08060', fontSize: 13, marginTop: 4, marginBottom: 18 },
+  greeting: { color: colors.turmeric, fontSize: 14, ...FONTS.medium, letterSpacing: 0.5 },
+  heroTitle: { color: colors.white, fontSize: 26, ...FONTS.heavy, marginTop: 6, lineHeight: 34 },
+  heroSub:   { color: isDark ? colors.textMuted : colors.greenPale, fontSize: 13, marginTop: 4, marginBottom: 18 },
   notifBtn: {
     width: 42, height: 42, borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: isDark ? colors.borderLight : 'rgba(255,255,255,0.1)',
     alignItems: 'center', justifyContent: 'center',
   },
   searchBar: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: isDark ? colors.border : 'rgba(255,255,255,0.1)',
     borderRadius: RADIUS.md, padding: 14,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1, borderColor: isDark ? colors.borderLight : 'rgba(255,255,255,0.12)',
     marginBottom: 20,
   },
-  searchPlaceholder: { color: 'rgba(255,255,255,0.5)', fontSize: 14, ...FONTS.regular },
+  searchPlaceholder: { color: colors.textLight, fontSize: 14, ...FONTS.regular },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 22 },
   stat:     { alignItems: 'center' },
-  statNum:  { color: COLORS.saffronLight, fontSize: 20, ...FONTS.bold },
-  statLbl:  { color: '#A08060', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 },
+  statNum:  { color: colors.saffronLight, fontSize: 20, ...FONTS.bold },
+  statLbl:  { color: colors.textMuted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 },
   orderNowBtn: {
-    backgroundColor: COLORS.saffron, borderRadius: RADIUS.md,
+    backgroundColor: colors.saffron, borderRadius: RADIUS.md,
     paddingVertical: 14, alignItems: 'center', ...SHADOW.medium,
     flexDirection: 'row', justifyContent: 'center', gap: 10,
   },
-  orderNowText: { color: COLORS.white, fontSize: 16, ...FONTS.bold },
-  body: { padding: 20 },
-  sectionLabel: { fontSize: 18, ...FONTS.bold, color: COLORS.text, marginBottom: 14 },
+  orderNowText: { color: colors.white, fontSize: 16, ...FONTS.bold },
+  body: { padding: 20, paddingTop: 24 },
+  sectionLabel: { fontSize: 18, ...FONTS.bold, color: colors.text, marginBottom: 14 },
+  sectionHeaderRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14,
+  },
+  seeAll: { fontSize: 14, ...FONTS.semibold, color: colors.saffron },
   catChip: {
     alignItems: 'center',
     marginRight: 12, minWidth: 72,
@@ -173,20 +269,33 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 6, ...SHADOW.small,
   },
-  catLabel: { fontSize: 12, ...FONTS.semibold, color: COLORS.text },
-  offerCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderRadius: RADIUS.lg, padding: 14, marginBottom: 10,
+  catLabel: { fontSize: 12, ...FONTS.semibold, color: colors.text },
+  popularSection: { marginBottom: 24 },
+  popularCard: {
+    width: 140, backgroundColor: colors.cardBg, borderRadius: RADIUS.lg,
+    padding: 14, marginRight: 16, alignItems: 'center',
+    borderWidth: 1, borderColor: colors.border, ...SHADOW.small,
   },
-  offerIconWrap: {
-    width: 40, height: 40, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
+  popularTag: {
+    position: 'absolute', top: 8, left: 8,
+    backgroundColor: colors.saffron, paddingHorizontal: 6, paddingVertical: 2,
+    borderRadius: RADIUS.sm,
   },
-  offerTitle: { fontSize: 14, ...FONTS.bold },
-  offerDesc:  { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+  popularTagText: { fontSize: 9, ...FONTS.bold, color: colors.white, textTransform: 'uppercase' },
+  popularEmoji: { fontSize: 36, marginTop: 16, marginBottom: 8 },
+  popularName: { fontSize: 13, ...FONTS.semibold, color: colors.text, textAlign: 'center' },
+  popularPrice: { fontSize: 15, ...FONTS.bold, color: colors.saffronDeep, marginTop: 4 },
+  quickActions: {
+    flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, gap: 10,
+  },
+  quickAction: {
+    flex: 1, alignItems: 'center', padding: 16, borderRadius: RADIUS.lg,
+    gap: 8,
+  },
+  quickActionText: { fontSize: 11, ...FONTS.semibold, color: colors.text, textAlign: 'center' },
   footer: {
-    marginTop: 20, padding: 16,
-    backgroundColor: COLORS.creamDark, borderRadius: RADIUS.lg, alignItems: 'center',
+    marginTop: 8, padding: 16,
+    backgroundColor: colors.creamDark, borderRadius: RADIUS.lg, alignItems: 'center',
   },
-  footerText: { color: COLORS.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  footerText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 },
 });

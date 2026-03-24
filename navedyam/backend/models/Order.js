@@ -41,12 +41,12 @@ const orderSchema = new mongoose.Schema({
   coupon_code:   { type: String, default: '' },
   payment_method: {
     type: String,
-    enum: ['cod', 'razorpay'],
+    enum: ['cod', 'upi', 'razorpay'],
     default: 'cod',
   },
   payment_status: {
     type: String,
-    enum: ['pending', 'paid', 'failed', 'refunded'],
+    enum: ['pending', 'paid', 'failed', 'refunded', 'cancelled'],
     default: 'pending',
   },
   razorpay_order_id:   { type: String, default: '' },

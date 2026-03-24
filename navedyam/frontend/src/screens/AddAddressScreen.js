@@ -4,7 +4,8 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   SafeAreaView, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS, RADIUS, SHADOW } from '../theme';
 import { Button } from '../components';
 import { api } from '../api/client';
 
@@ -13,6 +14,7 @@ const LABELS = ['Home', 'Work', 'Other'];
 export default function AddAddressScreen({ navigation, route }) {
   const existingAddress = route.params?.address;
   const isEdit = !!existingAddress;
+  const { colors } = useTheme();
 
   const [label, setLabel]           = useState(existingAddress?.label || 'Home');
   const [fullAddress, setFullAddress] = useState(existingAddress?.full_address || '');
@@ -54,6 +56,8 @@ export default function AddAddressScreen({ navigation, route }) {
     }
   }
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -88,7 +92,7 @@ export default function AddAddressScreen({ navigation, route }) {
           value={fullAddress}
           onChangeText={text => { setFullAddress(text); if (error) setError(''); }}
           placeholder="House/Flat no., Street, Area, City, State, PIN"
-          placeholderTextColor={COLORS.textMuted}
+          placeholderTextColor={colors.textMuted}
           style={[styles.textArea, !!error && styles.inputError]}
           multiline
           numberOfLines={4}
@@ -102,7 +106,7 @@ export default function AddAddressScreen({ navigation, route }) {
           value={landmark}
           onChangeText={setLandmark}
           placeholder="Near school, temple, mall..."
-          placeholderTextColor={COLORS.textMuted}
+          placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
 
@@ -117,10 +121,10 @@ export default function AddAddressScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.cream,
+    backgroundColor: colors.cream,
   },
   header: {
     flexDirection: 'row',
@@ -128,22 +132,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.cardBg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   backBtn: {
     padding: 4,
   },
   backIcon: {
     fontSize: 22,
-    color: COLORS.saffron,
+    color: colors.saffron,
     ...FONTS.bold,
   },
   headerTitle: {
     ...FONTS.bold,
     fontSize: 20,
-    color: COLORS.text,
+    color: colors.text,
   },
   scroll: {
     padding: 20,
@@ -152,13 +156,13 @@ const styles = StyleSheet.create({
   fieldLabel: {
     ...FONTS.medium,
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     marginBottom: 8,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   required: {
-    color: COLORS.error,
+    color: colors.error,
   },
   labelRow: {
     flexDirection: 'row',
@@ -170,52 +174,52 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: RADIUS.full,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.creamDark,
+    borderColor: colors.border,
+    backgroundColor: colors.creamDark,
   },
   labelChipActive: {
-    backgroundColor: COLORS.saffron,
-    borderColor: COLORS.saffron,
+    backgroundColor: colors.saffron,
+    borderColor: colors.saffron,
   },
   labelChipText: {
     ...FONTS.medium,
     fontSize: 14,
-    color: COLORS.text,
+    color: colors.text,
   },
   labelChipTextActive: {
-    color: COLORS.white,
+    color: colors.white,
     ...FONTS.semibold,
   },
   textArea: {
-    backgroundColor: COLORS.creamDark,
+    backgroundColor: colors.creamDark,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: RADIUS.md,
     padding: 13,
     fontSize: 15,
-    color: COLORS.text,
+    color: colors.text,
     ...FONTS.regular,
     minHeight: 100,
     marginBottom: 4,
   },
   input: {
-    backgroundColor: COLORS.creamDark,
+    backgroundColor: colors.creamDark,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: RADIUS.md,
     padding: 13,
     fontSize: 15,
-    color: COLORS.text,
+    color: colors.text,
     ...FONTS.regular,
     marginBottom: 4,
   },
   inputError: {
-    borderColor: COLORS.error,
+    borderColor: colors.error,
   },
   errorText: {
     ...FONTS.regular,
     fontSize: 12,
-    color: COLORS.error,
+    color: colors.error,
     marginBottom: 8,
   },
   saveBtn: {

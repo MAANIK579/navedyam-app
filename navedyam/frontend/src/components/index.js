@@ -1,4 +1,4 @@
-// src/components/index.js — Shared UI components (enhanced)
+// src/components/index.js — Shared UI components with theme support
 
 import React from 'react';
 import {
@@ -6,24 +6,31 @@ import {
   StyleSheet, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, RADIUS, SHADOW, SPACING } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { FONTS, RADIUS, SHADOW, SPACING } from '../theme';
 
 // ── Button ────────────────────────────────────────────────
 export function Button({ title, onPress, loading, variant = 'primary', style, textStyle, icon }) {
-  const bg = variant === 'primary'  ? COLORS.saffron
-           : variant === 'outline'  ? 'transparent'
-           : variant === 'green'    ? COLORS.green
-           : variant === 'danger'   ? COLORS.error
-           : COLORS.brown;
+  const { colors } = useTheme();
 
-  const borderColor = variant === 'outline' ? COLORS.saffron : 'transparent';
-  const color       = variant === 'outline' ? COLORS.saffron : COLORS.white;
+  const bg = variant === 'primary'  ? colors.saffron
+           : variant === 'outline'  ? 'transparent'
+           : variant === 'green'    ? colors.green
+           : variant === 'danger'   ? colors.error
+           : colors.brown;
+
+  const borderColor = variant === 'outline' ? colors.saffron : 'transparent';
+  const color       = variant === 'outline' ? colors.saffron : colors.white;
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={loading}
-      style={[styles.btn, { backgroundColor: bg, borderColor, borderWidth: variant === 'outline' ? 2 : 0, opacity: loading ? 0.7 : 1 }, style]}
+      style={[
+        styles.btn,
+        { backgroundColor: bg, borderColor, borderWidth: variant === 'outline' ? 2 : 0, opacity: loading ? 0.7 : 1 },
+        style
+      ]}
       activeOpacity={0.75}
     >
       {loading ? (
@@ -40,28 +47,36 @@ export function Button({ title, onPress, loading, variant = 'primary', style, te
 
 // ── Input ──────────────────────────────────────────────────
 export function Input({ label, style, inputStyle, error, leftIcon, ...props }) {
+  const { colors } = useTheme();
+
   return (
     <View style={[{ marginBottom: 14 }, style]}>
-      {label && <Text style={styles.inputLabel}>{label}</Text>}
-      <View style={styles.inputWrap}>
+      {label && <Text style={[styles.inputLabel, { color: colors.textMuted }]}>{label}</Text>}
+      <View style={[styles.inputWrap, { backgroundColor: colors.creamDark, borderColor: colors.border }]}>
         {leftIcon && (
-          <Ionicons name={leftIcon} size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
+          <Ionicons name={leftIcon} size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
         )}
         <TextInput
-          placeholderTextColor={COLORS.textMuted}
-          style={[styles.input, leftIcon && { paddingLeft: 0 }, inputStyle]}
+          placeholderTextColor={colors.textMuted}
+          style={[styles.input, { color: colors.text }, leftIcon && { paddingLeft: 0 }, inputStyle]}
           {...props}
         />
       </View>
-      {error && <Text style={styles.inputError}>{error}</Text>}
+      {error && <Text style={[styles.inputError, { color: colors.error }]}>{error}</Text>}
     </View>
   );
 }
 
 // ── Card ──────────────────────────────────────────────────
 export function Card({ children, style }) {
+  const { colors } = useTheme();
+
   return (
-    <View style={[styles.card, style]}>
+    <View style={[
+      styles.card,
+      { backgroundColor: colors.cardBg, borderColor: colors.borderLight },
+      style
+    ]}>
       {children}
     </View>
   );
@@ -69,7 +84,9 @@ export function Card({ children, style }) {
 
 // ── VegBadge ──────────────────────────────────────────────
 export function VegBadge({ isVeg }) {
-  const color = isVeg ? COLORS.green : COLORS.error;
+  const { colors } = useTheme();
+  const color = isVeg ? colors.green : colors.error;
+
   return (
     <View style={[styles.vegBadge, { borderColor: color }]}>
       <View style={[styles.vegDot, { backgroundColor: color }]} />
@@ -79,15 +96,18 @@ export function VegBadge({ isVeg }) {
 
 // ── StatusPill ────────────────────────────────────────────
 export function StatusPill({ status }) {
+  const { isDark, colors } = useTheme();
+
   const map = {
-    placed:           { bg: '#FEF9C3', color: '#854D0E', label: 'Placed',      icon: 'receipt-outline' },
-    confirmed:        { bg: '#DBEAFE', color: '#1D4ED8', label: 'Confirmed',   icon: 'checkmark-circle-outline' },
-    preparing:        { bg: '#FEF3C7', color: '#92400E', label: 'Preparing',   icon: 'flame-outline' },
-    out_for_delivery: { bg: '#D1FAE5', color: '#065F46', label: 'On the way',  icon: 'bicycle-outline' },
-    delivered:        { bg: '#D1FAE5', color: '#065F46', label: 'Delivered',    icon: 'checkmark-done-outline' },
-    cancelled:        { bg: '#FDECEA', color: '#C0392B', label: 'Cancelled',   icon: 'close-circle-outline' },
+    placed:           { bg: isDark ? colors.saffronPale : '#DCFCE7', color: isDark ? colors.saffronLight : colors.saffronDeep, label: 'Placed',      icon: 'receipt-outline' },
+    confirmed:        { bg: isDark ? colors.saffronPale : '#DCFCE7', color: isDark ? colors.saffronLight : colors.saffronDeep, label: 'Confirmed',   icon: 'checkmark-circle-outline' },
+    preparing:        { bg: isDark ? colors.saffronPale : '#DCFCE7', color: isDark ? colors.saffronLight : colors.saffronDeep, label: 'Preparing',   icon: 'flame-outline' },
+    out_for_delivery: { bg: isDark ? colors.saffronPale : '#BBF7D0', color: isDark ? colors.saffron : colors.saffronDeep, label: 'On the way',  icon: 'bicycle-outline' },
+    delivered:        { bg: isDark ? colors.successPale : '#D1FAE5', color: isDark ? colors.success : '#065F46', label: 'Delivered',    icon: 'checkmark-done-outline' },
+    cancelled:        { bg: isDark ? colors.errorPale : '#FEE2E2', color: isDark ? colors.error : '#DC2626', label: 'Cancelled',   icon: 'close-circle-outline' },
   };
-  const { bg, color, label, icon } = map[status] || { bg: '#F3F4F6', color: '#374151', label: status, icon: 'help-circle-outline' };
+  const { bg, color, label, icon } = map[status] || { bg: colors.creamDark, color: colors.textMuted, label: status, icon: 'help-circle-outline' };
+
   return (
     <View style={[styles.pill, { backgroundColor: bg }]}>
       <Ionicons name={icon} size={12} color={color} style={{ marginRight: 4 }} />
@@ -98,16 +118,25 @@ export function StatusPill({ status }) {
 
 // ── Divider ───────────────────────────────────────────────
 export function Divider({ style }) {
-  return <View style={[styles.divider, style]} />;
+  const { colors } = useTheme();
+  return <View style={[styles.divider, { backgroundColor: colors.borderLight }, style]} />;
 }
+
+// ── Re-exports ────────────────────────────────────────────
+export { default as BannerCarousel } from './BannerCarousel';
+export { default as ItemDetailModal } from './ItemDetailModal';
+export { default as HeartButton } from './HeartButton';
+export { default as StarRating } from './StarRating';
 
 // ── SectionHeader ─────────────────────────────────────────
 export function SectionHeader({ title, subtitle, right }) {
+  const { colors } = useTheme();
+
   return (
     <View style={{ marginBottom: SPACING.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {subtitle && <Text style={styles.sectionSub}>{subtitle}</Text>}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+        {subtitle && <Text style={[styles.sectionSub, { color: colors.textMuted }]}>{subtitle}</Text>}
       </View>
       {right && right}
     </View>
@@ -131,16 +160,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     ...FONTS.semibold,
     fontSize: 13,
-    color: COLORS.textMuted,
     marginBottom: 6,
     letterSpacing: 0.3,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.creamDark,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     paddingHorizontal: 13,
   },
@@ -148,20 +174,16 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     fontSize: 15,
-    color: COLORS.text,
     ...FONTS.regular,
   },
   inputError: {
     ...FONTS.medium,
     fontSize: 12,
-    color: COLORS.error,
     marginTop: 4,
   },
   card: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
     padding: SPACING.lg,
     ...SHADOW.small,
   },
@@ -194,17 +216,14 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.borderLight,
     marginVertical: SPACING.md,
   },
   sectionTitle: {
     fontSize: 20,
     ...FONTS.bold,
-    color: COLORS.text,
   },
   sectionSub: {
     fontSize: 13,
-    color: COLORS.textMuted,
     marginTop: 2,
   },
 });

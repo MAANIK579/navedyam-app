@@ -69,16 +69,14 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
           width:          '100%',
           maxWidth:       maxWidth,
           maxHeight:      'calc(100vh - 40px)',
-          background:     'linear-gradient(165deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.66) 100%)',
-          border:         '1px solid rgba(255,255,255,0.58)',
+          background:     'var(--glass-strong)',
+          border:         '1px solid var(--border)',
           borderRadius:   'var(--radius-xl)',
           boxShadow:      'var(--shadow-xl)',
           display:        'flex',
           flexDirection:  'column',
           overflow:       'hidden',
           animation:      'slideDown 0.22s ease both',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -88,9 +86,9 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
           alignItems:     'center',
           justifyContent: 'space-between',
           padding:        '16px 20px',
-          borderBottom:   '1px solid rgba(255,255,255,0.62)',
+          borderBottom:   '1px solid var(--border)',
           flexShrink:     0,
-          background:     'rgba(248,249,251,0.6)',
+          background:     'var(--cream-dark)',
         }}>
           <h2 style={{
             fontSize:      '1rem',
@@ -117,8 +115,8 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
               border:         '1px solid transparent',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background  = 'rgba(255,255,255,0.64)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.8)';
+              e.currentTarget.style.background  = 'var(--cream)';
+              e.currentTarget.style.borderColor = 'var(--border)';
               e.currentTarget.style.color       = 'var(--saffron)';
             }}
             onMouseLeave={(e) => {

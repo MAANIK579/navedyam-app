@@ -52,9 +52,9 @@ export default function UsersPage() {
         borderRadius: 99,
         fontSize:     '0.72rem',
         fontWeight:   600,
-        background:   isAdmin ? '#FFF3E0' : 'var(--cream-dark)',
-        color:        isAdmin ? '#E65100' : 'var(--text-muted)',
-        border:       `1px solid ${isAdmin ? '#FFCC80' : 'var(--border)'}`,
+        background:   isAdmin ? '#DCFCE7' : 'var(--cream-dark)',
+        color:        isAdmin ? '#166534' : 'var(--text-muted)',
+        border:       `1px solid ${isAdmin ? '#86EFAC' : 'var(--border)'}`,
         textTransform:'capitalize',
       }}>
         {isAdmin ? 'Admin' : role ?? 'user'}

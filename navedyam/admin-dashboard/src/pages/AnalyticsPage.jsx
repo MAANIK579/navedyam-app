@@ -30,17 +30,17 @@ const RANGE_OPTIONS = [
 ];
 
 const STATUS_COLORS = {
-  placed:           '#F9A825',
-  confirmed:        '#1976D2',
-  preparing:        '#F57C00',
+  placed:           '#22C55E',
+  confirmed:        '#22C55E',
+  preparing:        '#16A34A',
   out_for_delivery: '#43A047',
   delivered:        '#2E7D32',
-  cancelled:        '#C62828',
+  cancelled:        '#166534',
 };
 
 const CHART_COLORS = [
   colors.saffron, colors.brown, colors.green, colors.saffronLight,
-  '#1976D2', '#7B1FA2', '#00838F', '#C62828',
+  '#22C55E', '#16A34A', '#166534', '#166534',
 ];
 
 /* ---- Tiny section wrapper ---- */
