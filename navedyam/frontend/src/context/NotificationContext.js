@@ -93,7 +93,7 @@ export function NotificationProvider({ children }) {
 
       // Get Expo push token
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: undefined, // Will use app.json's projectId
+        projectId: 'f24ee4f9-6c58-415b-8c0c-0af4ea6e9c66', // From app.json
       });
       const token = tokenData.data;
       setExpoPushToken(token);

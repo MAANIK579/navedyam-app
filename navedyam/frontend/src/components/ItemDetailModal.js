@@ -7,11 +7,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { FONTS, RADIUS, SHADOW } from '../theme';
-import { VegBadge } from './index';
 import HeartButton from './HeartButton';
 import StarRating from './StarRating';
 import { useCart } from '../context/CartContext';
 import api from '../api/client';
+
+// Local VegBadge to avoid circular dependency with ./index
+function VegBadge({ isVeg }) {
+  const { colors } = useTheme();
+  const color = isVeg ? colors.green : colors.error;
+  return (
+    <View style={{ width: 18, height: 18, borderWidth: 2, borderRadius: 3, borderColor: color, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+    </View>
+  );
+}
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 

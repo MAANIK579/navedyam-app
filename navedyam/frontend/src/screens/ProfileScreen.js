@@ -210,7 +210,9 @@ const createStyles = (colors, isDark) => StyleSheet.create({
   userName:   { color: colors.white, fontSize: 18, ...FONTS.bold },
   userPhone:  { color: colors.textMuted, fontSize: 13 },
   editBtn: {
-    backgroundColor: colors.borderLight,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
     borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8,
     flexDirection: 'row', alignItems: 'center', gap: 6,
   },

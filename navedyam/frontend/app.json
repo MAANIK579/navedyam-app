@@ -19,11 +19,13 @@
       "adaptiveIcon": {
         "backgroundColor": "#3D1F0A"
       },
-      "package": "com.navedyam.app"
+      "package": "com.navedyam.app",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-dev-client"
+      "expo-dev-client",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {
