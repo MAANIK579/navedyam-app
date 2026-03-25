@@ -25,7 +25,15 @@
     "plugins": [
       "expo-secure-store",
       "expo-dev-client",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "useCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
