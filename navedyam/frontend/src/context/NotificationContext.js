@@ -1,9 +1,13 @@
 // src/context/NotificationContext.js — Enhanced push notifications
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { useAuth } from './AuthContext';
 import { api } from '../api/client';
+
+// Check if we're running in Expo Go (where native Firebase modules aren't available)
+const isExpoGo = Constants.appOwnership === 'expo';
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
@@ -41,8 +45,10 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     if (!user) return;
 
-    // Register for push notifications
-    registerForPushNotifications();
+    // Skip push notification registration in Expo Go (Firebase not available)
+    if (!isExpoGo) {
+      registerForPushNotifications();
+    }
 
     // Fetch initial unread count
     fetchUnreadCount();
