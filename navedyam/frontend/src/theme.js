@@ -27,8 +27,8 @@ export const LIGHT_COLORS = {
 
   // Text colors
   text:         '#0F172A',
-  textMuted:    '#64748B',
-  textLight:    '#94A3B8',
+  textMuted:    '#13ce96',
+  textLight:    '#d5db35',
 
   // Surface colors
   white:        '#FFFFFF',
